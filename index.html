@@ -2,69 +2,106 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Flashcard Study Tool</title>
+    <title>My 50 Flashcards</title>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f0f2f5; }
-        
-        /* The Card Container */
-        .card {
-            width: 350px; height: 200px; perspective: 1000px; cursor: pointer; margin-top: 50px;
-        }
-
-        /* The Flipping Logic */
-        .card-inner {
-            position: relative; width: 100%; height: 100%; text-align: center;
-            transition: transform 0.6s; transform-style: preserve-3d;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 10px;
-        }
-
+        /* This is the CSS (The Style) */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; background: #f4f7f6; color: #333; padding: 20px; }
+        .card { width: 350px; height: 250px; perspective: 1000px; cursor: pointer; margin: 20px 0; }
+        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         .card.flipped .card-inner { transform: rotateY(180deg); }
-
-        .front, .back {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-            display: flex; align-items: center; justify-content: center; 
-            padding: 20px; box-sizing: border-box; border-radius: 10px; font-size: 1.2rem;
-        }
-
-        .front { background: white; color: #333; }
+        .front, .back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; padding: 30px; box-sizing: border-box; border-radius: 15px; font-size: 1.4rem; font-weight: bold; }
+        .front { background: white; color: #333; border: 2px solid #ddd; }
         .back { background: #007bff; color: white; transform: rotateY(180deg); }
-
-        .controls { margin-top: 20px; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; background: #333; color: white; }
+        .controls { display: flex; gap: 10px; }
+        button { padding: 12px 24px; cursor: pointer; border: none; border-radius: 8px; background: #333; color: white; font-weight: bold; transition: 0.2s; }
+        button:hover { background: #555; transform: translateY(-2px); }
+        #counter { margin-top: 10px; font-size: 0.9rem; color: #666; }
     </style>
 </head>
 <body>
 
-    <h2>Flashcard Practice</h2>
+    <h2>Study Session</h2>
+    
+    <div id="counter">Card 1 of 50</div>
 
     <div class="card" id="card" onclick="this.classList.toggle('flipped')">
         <div class="card-inner">
-            <div class="front" id="frontText">Question loading...</div>
-            <div class="back" id="backText">Answer loading...</div>
+            <div class="front" id="frontText">Loading...</div>
+            <div class="back" id="backText">Loading...</div>
         </div>
     </div>
 
     <div class="controls">
-        <button onclick="prevCard()">Previous</button>
-        <button onclick="nextCard()">Next</button>
+        <button onclick="prevCard()">← Prev</button>
+        <button onclick="shuffleCards()">Shuffle</button>
+        <button onclick="nextCard()">Next →</button>
     </div>
 
     <script>
+        /* This is the JavaScript (The Brains) */
         const flashcards = [
-            { q: "What is the capital of France?", a: "Paris" },
-            { q: "What does HTML stand for?", a: "HyperText Markup Language" },
-            { q: "What is 2 + 2?", a: "4" }
+            { q: "What is the capital of Japan?", a: "Tokyo" },
+            { q: "How many continents are there?", a: "7" },
+            { q: "What is the square root of 144?", a: "12" },
+            { q: "Which planet is closest to the sun?", a: "Mercury" },
+            { q: "Who wrote 'Romeo and Juliet'?", a: "William Shakespeare" },
+            { q: "What is the chemical symbol for Gold?", a: "Au" },
+            { q: "What does CPU stand for?", a: "Central Processing Unit" },
+            { q: "Which ocean is the largest?", a: "Pacific Ocean" },
+            { q: "What is the fastest land animal?", a: "Cheetah" },
+            { q: "How many colors are in a rainbow?", a: "7" },
+            { q: "What is the powerhouse of the cell?", a: "Mitochondria" },
+            { q: "In what year did the Titanic sink?", a: "1912" },
+            { q: "What is the hardest natural substance?", a: "Diamond" },
+            { q: "Which gas do plants breathe in?", a: "Carbon Dioxide" },
+            { q: "What is the capital of Italy?", a: "Rome" },
+            { q: "Who invented the lightbulb?", a: "Thomas Edison" },
+            { q: "What is the largest organ in the human body?", a: "Skin" },
+            { q: "How many bones are in the adult human body?", a: "206" },
+            { q: "What is the main ingredient in hummus?", a: "Chickpeas" },
+            { q: "Which country gifted the Statue of Liberty to the USA?", a: "France" },
+            { q: "What is the boiling point of water (Celsius)?", a: "100°C" },
+            { q: "What is the smallest prime number?", a: "2" },
+            { q: "Who was the first person to walk on the moon?", a: "Neil Armstrong" },
+            { q: "What is the longest river in the world?", a: "The Nile" },
+            { q: "What does URL stand for?", a: "Uniform Resource Locator" },
+            { q: "Which planet has the most rings?", a: "Saturn" },
+            { q: "What is the currency of the United Kingdom?", a: "Pound Sterling" },
+            { q: "How many states are in the USA?", a: "50" },
+            { q: "Who painted the 'Starry Night'?", a: "Vincent van Gogh" },
+            { q: "What is the primary language spoken in Brazil?", a: "Portuguese" },
+            { q: "What is the largest desert in the world?", a: "Antarctica" },
+            { q: "How many strings does a standard guitar have?", a: "6" },
+            { q: "What is the Greek god of the sea?", a: "Poseidon" },
+            { q: "What is the chemical symbol for Water?", a: "H2O" },
+            { q: "Which country is known as the Land of the Rising Sun?", a: "Japan" },
+            { q: "What is the capital of Canada?", a: "Ottawa" },
+            { q: "Who is the author of 'Harry Potter'?", a: "J.K. Rowling" },
+            { q: "What is the tallest mountain in the world?", a: "Mount Everest" },
+            { q: "What is 15% of 200?", a: "30" },
+            { q: "Which element has the atomic number 1?", a: "Hydrogen" },
+            { q: "What is the capital of Spain?", a: "Madrid" },
+            { q: "How many years are in a century?", a: "100" },
+            { q: "What is the largest species of shark?", a: "Whale Shark" },
+            { q: "Who discovered penicillin?", a: "Alexander Fleming" },
+            { q: "What is the main gas in Earth's atmosphere?", a: "Nitrogen" },
+            { q: "In which city is the Eiffel Tower located?", a: "Paris" },
+            { q: "What is the study of weather called?", a: "Meteorology" },
+            { q: "How many degrees are in a right angle?", a: "90°" },
+            { q: "What is the capital of Australia?", a: "Canberra" },
+            { q: "What is the most spoken language in the world?", a: "Mandarin Chinese" }
         ];
 
         let currentIndex = 0;
 
         function updateCard() {
             const card = document.getElementById('card');
-            card.classList.remove('flipped'); // Reset flip when changing cards
+            card.classList.remove('flipped'); 
             
             setTimeout(() => {
                 document.getElementById('frontText').innerText = flashcards[currentIndex].q;
                 document.getElementById('backText').innerText = flashcards[currentIndex].a;
+                document.getElementById('counter').innerText = `Card ${currentIndex + 1} of ${flashcards.length}`;
             }, 150); 
         }
 
@@ -78,8 +115,13 @@
             updateCard();
         }
 
-        // Initialize first card
-        updateCard();
+        function shuffleCards() {
+            flashcards.sort(() => Math.random() - 0.5);
+            currentIndex = 0;
+            updateCard();
+        }
+
+        updateCard(); // Start the first card
     </script>
 </body>
 </html>
