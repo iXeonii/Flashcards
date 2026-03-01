@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcard Pro - Professional Edition</title>
+    <title>Flashcard Pro - Studio Edition</title>
     <style>
         :root {
             --primary: #6366f1;
@@ -18,30 +18,31 @@
         /* SIDEBAR */
         #sidebar { width: 340px; min-width: 340px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(20px); border-right: 1px solid rgba(255,255,255,0.1); padding: 20px; display: flex; flex-direction: column; z-index: 10; }
         
-        /* PULSING HINT */
-        @keyframes pulseHint { 0%, 100% { opacity: 0.3; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1); } }
-        .hint-text { font-size: 0.75rem; text-align: center; margin-bottom: 10px; color: var(--warning); font-weight: bold; animation: pulseHint 2s infinite ease-in-out; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .logout-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 0.7rem; transition: 0.2s; }
+        .logout-btn:hover { background: var(--danger); }
+
+        @keyframes pulseHint { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+        .hint-text { font-size: 0.75rem; text-align: center; margin-bottom: 10px; color: var(--warning); animation: pulseHint 2s infinite; }
 
         #log-list { flex-grow: 1; overflow-y: auto; list-style: none; padding: 0; }
-        .log-item { margin-bottom: 8px; border-radius: 12px; background: rgba(255,255,255,0.05); overflow: hidden; border: 2px solid transparent; transition: 0.3s; }
+        .log-item { margin-bottom: 8px; border-radius: 12px; background: rgba(255,255,255,0.05); overflow: hidden; border: 2px solid transparent; transition: 0.2s; }
         .log-item.can-open { cursor: pointer; }
         .log-item.can-open:hover { background: rgba(255,255,255,0.1); }
-        .log-item.open { border-color: var(--primary); box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+        .log-item.open { border-color: var(--primary); background: rgba(99, 102, 241, 0.1); }
         
         .log-header { padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
-        .status-icon { font-weight: 900; font-size: 1.1rem; }
         .status-icon.right { color: var(--success); }
-        .status-icon.wrong { color: var(--danger); }
-        .log-answer { max-height: 0; padding: 0 12px; font-size: 0.8rem; background: rgba(99, 102, 241, 0.2); transition: 0.3s ease-in-out; overflow: hidden; }
+        .status-icon.wrong { color: var(--danger); font-weight: bold; }
+        .log-answer { max-height: 0; padding: 0 12px; font-size: 0.8rem; background: rgba(255,255,255,0.05); transition: 0.3s; overflow: hidden; }
         .log-item.open .log-answer { max-height: 100px; padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
 
         /* LEADERBOARD */
         #leaderboard { margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
-        .lb-title { font-size: 1rem; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
         .lb-entry { position: relative; padding: 8px 12px; margin-bottom: 6px; border-radius: 8px; background: rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; overflow: hidden; }
-        .lb-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.15; z-index: 0; }
-        .lb-name { font-weight: 700; z-index: 1; flex-grow: 1; margin-left: 10px; }
-        .lb-score { font-weight: 800; z-index: 1; color: var(--warning); }
+        .lb-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.2; z-index: 0; }
+        .reset-lb { background: none; border: none; color: #ff4444; font-size: 0.6rem; cursor: pointer; opacity: 0.5; width: 100%; text-align: center; margin-top: 5px; }
+        .reset-lb:hover { opacity: 1; }
 
         /* MAIN AREA */
         #game-container { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; }
@@ -51,33 +52,33 @@
         #timer-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); display: none; }
         #timer-bar { width: 100%; height: 100%; background: var(--success); transition: width 0.1s linear; }
 
-        /* MENU CARDS */
-        .menu-card { text-align: center; background: white; color: #333; padding: 40px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 380px; position: relative; }
+        /* MENUS */
+        .menu-card { text-align: center; background: white; color: #333; padding: 40px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 380px; display: none; }
         .btn-mode { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; margin: 10px 0; width: 100%; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
         .btn-mode:hover { transform: translateY(-2px); filter: brightness(1.1); }
-        .btn-back { background: none; border: none; color: #666; cursor: pointer; font-size: 0.9rem; margin-top: 10px; text-decoration: underline; }
+        .btn-back { background: none; border: none; color: #888; cursor: pointer; font-size: 0.8rem; margin-top: 10px; }
 
         /* CARD */
-        .card { width: 420px; height: 300px; perspective: 1000px; cursor: pointer; }
+        .card { width: 420px; height: 300px; perspective: 1000px; cursor: pointer; margin-bottom: 20px; }
         .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); transform-style: preserve-3d; }
         .card.flipped .card-inner { transform: rotateY(180deg); }
         .front, .back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; padding: 40px; border-radius: 28px; font-size: 1.6rem; font-weight: 700; box-sizing: border-box; }
         .front { background: white; color: #1e293b; }
         .back { background: var(--primary); color: white; transform: rotateY(180deg); }
 
-        .btn-group { display: flex; gap: 20px; margin-top: 40px; }
-        button:not(.btn-back) { padding: 18px 35px; border: none; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; }
+        .btn-group button { padding: 18px 35px; border: none; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; margin: 0 10px; }
         .btn-wrong { background: var(--danger); color: white; }
         .btn-right { background: var(--success); color: white; }
-        
-        #profile-setup input { padding: 12px; width: 80%; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 1rem; text-align: center; }
+        input#nickname-input { padding: 12px; width: 80%; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 1rem; text-align: center; }
     </style>
 </head>
 <body>
 
     <aside id="sidebar">
-        <h2 style="margin: 0;">Flash Focus</h2>
-        <div id="user-tag" style="font-size: 0.8rem; opacity: 0.6; margin-bottom: 15px;">Guest</div>
+        <div class="user-row">
+            <span id="user-display" style="font-weight: bold; color: var(--warning);">Guest</span>
+            <button class="logout-btn" onclick="logout()">Logout ⏻</button>
+        </div>
         
         <div class="hint-text">Click ✔ items to review</div>
         
@@ -89,8 +90,9 @@
         <ul id="log-list"></ul>
 
         <div id="leaderboard">
-            <div class="lb-title">🏆 Hall of Fame</div>
+            <div style="font-weight: 800; font-size: 0.9rem; margin-bottom: 10px;">🏆 Leaderboard</div>
             <div id="lb-content"></div>
+            <button class="reset-lb" onclick="resetLeaderboard()">Reset Records</button>
         </div>
     </aside>
 
@@ -100,49 +102,49 @@
             <div id="timer-container"><div id="timer-bar"></div></div>
         </div>
 
-        <div id="profile-setup" class="menu-card">
-            <h1>Welcome!</h1>
-            <p>Enter a nickname for the leaderboard:</p>
-            <input type="text" id="nickname-input" placeholder="Your Name..." maxlength="12">
-            <button class="btn-mode" onclick="saveProfile()">Start Learning</button>
+        <div id="screen-profile" class="menu-card">
+            <h1>New Player</h1>
+            <p>Enter your name to track scores:</p>
+            <input type="text" id="nickname-input" placeholder="Nickname..." maxlength="12">
+            <button class="btn-mode" onclick="saveProfile()">Enter Studio</button>
         </div>
 
-        <div id="menu-step-1" class="menu-card" style="display:none;">
+        <div id="screen-mode" class="menu-card">
             <h1>Game Mode</h1>
-            <button class="btn-mode" onclick="setMode('Normal')">Standard Study</button>
-            <button class="btn-mode" style="background: var(--warning); color: #000;" onclick="setMode('Speed')">⚡ Speed Blitz (10s)</button>
+            <button class="btn-mode" onclick="setMode('Normal')">Normal Mode</button>
+            <button class="btn-mode" style="background: var(--warning); color: #000;" onclick="setMode('Speed')">⚡ Speed Blitz</button>
         </div>
 
-        <div id="menu-step-2" class="menu-card" style="display:none;">
+        <div id="screen-size" class="menu-card">
             <h1>Session Size</h1>
-            <button class="btn-mode" onclick="startGame(10)">Sprint (10 Cards)</button>
-            <button class="btn-mode" onclick="startGame(50)">Marathon (50 Cards)</button>
-            <button class="btn-back" onclick="goBackToStep1()">← Change Mode</button>
+            <button class="btn-mode" onclick="startGame(10)">Sprint (10)</button>
+            <button class="btn-mode" onclick="startGame(50)">Marathon (50)</button>
+            <button class="btn-back" onclick="showScreen('screen-mode')">← Change Mode</button>
         </div>
         
         <div id="game-ui" style="display: none; flex-direction: column; align-items: center;">
-            <div id="counter" style="margin-bottom: 20px; font-weight: 800; background: rgba(255,255,255,0.1); padding: 8px 20px; border-radius: 30px;">CARD 1</div>
+            <div id="counter" style="margin-bottom: 15px; font-weight: 800; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem;">CARD 1</div>
             <div class="card" id="card" onclick="this.classList.toggle('flipped')">
                 <div class="card-inner"><div class="front" id="q-text"></div><div class="back" id="a-text"></div></div>
             </div>
             <div class="btn-group">
-                <button class="btn-wrong" onclick="handleAnswer(false)">❌ Missed</button>
-                <button class="btn-right" onclick="handleAnswer(true)">✅ Got It!</button>
+                <button class="btn-wrong" onclick="handleAnswer(false)">❌ Miss</button>
+                <button class="btn-right" onclick="handleAnswer(true)">✅ Got It</button>
             </div>
         </div>
 
-        <div id="game-over" class="menu-card" style="display:none;">
-            <h1 id="over-title">Session Ended</h1>
-            <p id="final-stats"></p>
+        <div id="screen-over" class="menu-card">
+            <h1 id="over-title">Finished!</h1>
+            <p id="final-stats" style="font-size: 1.2rem; margin-bottom: 20px;"></p>
             <button id="retry-missed-btn" class="btn-mode" style="background: var(--danger);" onclick="replayMissed()">Review Mistakes</button>
-            <button class="btn-mode" onclick="location.reload()">Back to Start</button>
+            <button class="btn-mode" onclick="showScreen('screen-mode')">Menu</button>
         </div>
     </main>
 
     <script>
         let audioCtx, currentDeck = [], missedCards = [], gameMode = 'Normal', 
             currentIndex = 0, score = 0, lock = false, timerInterval, 
-            isReviewMode = false, userName = "Guest";
+            isReviewMode = false, userName = "";
 
         const rawDeck = [
             { q: "What is the capital of Japan?", a: "Tokyo" },
@@ -164,37 +166,7 @@
             { q: "What is the largest organ in the human body?", a: "Skin" },
             { q: "How many bones are in the adult human body?", a: "206" },
             { q: "What is the main ingredient in hummus?", a: "Chickpeas" },
-            { q: "Which country gifted the Statue of Liberty to the USA?", a: "France" },
-            { q: "What is the boiling point of water (Celsius)?", a: "100°C" },
-            { q: "What is the smallest prime number?", a: "2" },
-            { q: "Who was the first person to walk on the moon?", a: "Neil Armstrong" },
-            { q: "What is the longest river in the world?", a: "The Nile" },
-            { q: "What does URL stand for?", a: "Uniform Resource Locator" },
-            { q: "Which planet has the most rings?", a: "Saturn" },
-            { q: "What is the currency of the United Kingdom?", a: "Pound Sterling" },
-            { q: "How many states are in the USA?", a: "50" },
-            { q: "Who painted the 'Starry Night'?", a: "Vincent van Gogh" },
-            { q: "What is the primary language spoken in Brazil?", a: "Portuguese" },
-            { q: "What is the largest desert in the world?", a: "Antarctica" },
-            { q: "How many strings does a standard guitar have?", a: "6" },
-            { q: "What is the Greek god of the sea?", a: "Poseidon" },
-            { q: "What is the chemical symbol for Water?", a: "H2O" },
-            { q: "Which country is known as the Land of the Rising Sun?", a: "Japan" },
-            { q: "What is the capital of Canada?", a: "Ottawa" },
-            { q: "Who is the author of Harry Potter?", a: "J.K. Rowling" },
-            { q: "What is the tallest mountain in the world?", a: "Mount Everest" },
-            { q: "What is 15% of 200?", a: "30" },
-            { q: "Which element has the atomic number 1?", a: "Hydrogen" },
-            { q: "What is the capital of Spain?", a: "Madrid" },
-            { q: "How many years are in a century?", a: "100" },
-            { q: "What is the largest species of shark?", a: "Whale Shark" },
-            { q: "Who discovered penicillin?", a: "Alexander Fleming" },
-            { q: "What is the main gas in Earth's atmosphere?", a: "Nitrogen" },
-            { q: "In which city is the Eiffel Tower located?", a: "Paris" },
-            { q: "What is the study of weather called?", a: "Meteorology" },
-            { q: "How many degrees are in a right angle?", a: "90°" },
-            { q: "What is the capital of Australia?", a: "Canberra" },
-            { q: "What is the most spoken language in the world?", a: "Mandarin Chinese" }
+            { q: "Which country gifted the Statue of Liberty to the USA?", a: "France" }
         ];
 
         function playSfx(t) {
@@ -203,42 +175,65 @@
             o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0, audioCtx.currentTime);
             if (t === 'correct') {
                 o.frequency.setValueAtTime(523, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime+0.1);
-                g.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime+0.01); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.2);
+                g.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime+0.01); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.2);
             } else {
-                o.type='sawtooth'; o.frequency.setValueAtTime(120, audioCtx.currentTime);
-                g.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime+0.01); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.3);
+                o.type='sawtooth'; o.frequency.setValueAtTime(100, audioCtx.currentTime);
+                g.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.01); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.3);
             }
             o.start(); o.stop(audioCtx.currentTime+0.3);
         }
 
-        // PROFILE SYSTEM
+        function showScreen(screenId) {
+            document.querySelectorAll('.menu-card, #game-ui').forEach(s => s.style.display = 'none');
+            document.getElementById(screenId).style.display = screenId === 'game-ui' ? 'flex' : 'block';
+        }
+
         window.onload = () => {
             const savedName = localStorage.getItem('flashName');
             if(savedName) {
                 userName = savedName;
-                document.getElementById('user-tag').innerText = "Player: " + userName;
-                document.getElementById('profile-setup').style.display = 'none';
-                document.getElementById('menu-step-1').style.display = 'block';
+                document.getElementById('user-display').innerText = userName;
+                showScreen('screen-mode');
+            } else {
+                showScreen('screen-profile');
             }
             updateLeaderboard();
         }
 
         function saveProfile() {
             const val = document.getElementById('nickname-input').value.trim();
-            userName = val || "Scholar";
+            if(!val) return alert("Enter a name!");
+            userName = val;
             localStorage.setItem('flashName', userName);
-            document.getElementById('user-tag').innerText = "Player: " + userName;
-            document.getElementById('profile-setup').style.display = 'none';
-            document.getElementById('menu-step-1').style.display = 'block';
+            document.getElementById('user-display').innerText = userName;
+            showScreen('screen-mode');
         }
 
-        // NAVIGATION
-        function setMode(m) { gameMode = m; document.getElementById('menu-step-1').style.display = 'none'; document.getElementById('menu-step-2').style.display = 'block'; }
-        function goBackToStep1() { document.getElementById('menu-step-2').style.display = 'none'; document.getElementById('menu-step-1').style.display = 'block'; }
+        function logout() {
+            localStorage.removeItem('flashName');
+            location.reload();
+        }
+
+        function resetLeaderboard() {
+            if(confirm("Delete all high scores?")) {
+                localStorage.removeItem('flashScores');
+                updateLeaderboard();
+            }
+        }
+
+        function setMode(m) { gameMode = m; showScreen('screen-size'); }
 
         function startGame(limit) {
-            document.getElementById('menu-step-2').style.display = 'none'; document.getElementById('game-ui').style.display = 'flex';
+            isReviewMode = false;
+            document.getElementById('score-label').innerText = "Current Score";
+            document.getElementById('log-list').innerHTML = "";
+            document.getElementById('score-text').innerText = "0";
+            score = 0; currentIndex = 0; missedCards = [];
+            
+            showScreen('game-ui');
             if (gameMode === 'Speed') document.getElementById('timer-container').style.display = 'block';
+            else document.getElementById('timer-container').style.display = 'none';
+            
             currentDeck = [...rawDeck].sort(() => Math.random() - 0.5).slice(0, limit);
             updateUI();
         }
@@ -270,8 +265,6 @@
             if (lock) return; lock = true; clearInterval(timerInterval);
             const currentQ = currentDeck[currentIndex];
             const logItem = document.createElement('li');
-            
-            // Only Correct answers can be opened
             logItem.className = 'log-item' + (isRight ? ' can-open' : '');
             logItem.innerHTML = `
                 <div class="log-header" ${isRight ? 'onclick="toggleAnswer(this)"' : ''}>
@@ -293,28 +286,28 @@
 
         function showGameOver() {
             clearInterval(timerInterval);
-            document.getElementById('game-ui').style.display = 'none';
-            document.getElementById('game-over').style.display = 'block';
+            document.getElementById('progress-bar-fill').style.width = "100%";
+            showScreen('screen-over');
             
             if (isReviewMode) {
                 document.getElementById('over-title').innerText = "Practice Done!";
-                document.getElementById('final-stats').innerText = "You successfully reviewed your mistakes.";
+                document.getElementById('final-stats').innerText = "You reviewed your mistakes.";
                 document.getElementById('retry-missed-btn').style.display = 'none';
             } else {
                 saveScore(score, currentDeck.length, gameMode);
-                document.getElementById('final-stats').innerText = `Final Score: ${score} / ${currentDeck.length}`;
+                document.getElementById('over-title').innerText = "Session Ended";
+                document.getElementById('final-stats').innerText = `Result: ${score} / ${currentDeck.length}`;
                 document.getElementById('retry-missed-btn').style.display = missedCards.length > 0 ? 'block' : 'none';
             }
         }
 
         function replayMissed() {
-            isReviewMode = true; // Mark as review mode
+            isReviewMode = true;
             currentDeck = [...missedCards]; missedCards = []; currentIndex = 0; score = 0;
-            document.getElementById('score-label').innerText = "Practice Correct";
-            document.getElementById('game-over').style.display = 'none'; 
-            document.getElementById('game-ui').style.display = 'flex';
+            document.getElementById('score-label').innerText = "Practice Mode";
             document.getElementById('log-list').innerHTML = ""; 
-            document.getElementById('score-text').innerText = "0"; 
+            document.getElementById('score-text').innerText = "0";
+            showScreen('game-ui');
             updateUI();
         }
 
@@ -327,14 +320,14 @@
         function updateLeaderboard() {
             const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
             const content = document.getElementById('lb-content');
-            content.innerHTML = scores.length ? '' : '<div style="font-size:0.7rem; opacity:0.5;">No records yet!</div>';
+            content.innerHTML = scores.length ? '' : '<div style="font-size:0.7rem; opacity:0.4;">No records yet.</div>';
             scores.sort((a,b) => (b.score/b.total) - (a.score/a.total)).slice(0, 5).forEach((s, i) => {
                 content.innerHTML += `
                     <div class="lb-entry">
                         <div class="lb-bar" style="width: ${(s.score/s.total)*100}%"></div>
-                        <span style="z-index:1">${i+1}.</span>
-                        <div class="lb-name">${s.name} (${s.mode})</div>
-                        <div class="lb-score">${s.score}/${s.total}</div>
+                        <div style="z-index:1; font-weight:bold;">${s.name}</div>
+                        <div style="z-index:1; opacity:0.7;">${s.mode}</div>
+                        <div style="z-index:1; color:var(--warning); font-weight:900;">${s.score}/${s.total}</div>
                     </div>`;
             });
         }
