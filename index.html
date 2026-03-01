@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcard Pro - Hall of Fame</title>
+    <title>Flashcard Pro - Professional Edition</title>
     <style>
         :root {
             --primary: #6366f1;
@@ -17,9 +17,17 @@
 
         /* SIDEBAR */
         #sidebar { width: 340px; min-width: 340px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(20px); border-right: 1px solid rgba(255,255,255,0.1); padding: 20px; display: flex; flex-direction: column; z-index: 10; }
-        #log-list { flex-grow: 1; overflow-y: auto; list-style: none; padding: 0; margin-top: 10px; }
-        .log-item { margin-bottom: 8px; border-radius: 12px; background: rgba(255,255,255,0.05); overflow: hidden; border: 2px solid transparent; transition: 0.3s; cursor: pointer; }
+        
+        /* PULSING HINT */
+        @keyframes pulseHint { 0%, 100% { opacity: 0.3; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1); } }
+        .hint-text { font-size: 0.75rem; text-align: center; margin-bottom: 10px; color: var(--warning); font-weight: bold; animation: pulseHint 2s infinite ease-in-out; }
+
+        #log-list { flex-grow: 1; overflow-y: auto; list-style: none; padding: 0; }
+        .log-item { margin-bottom: 8px; border-radius: 12px; background: rgba(255,255,255,0.05); overflow: hidden; border: 2px solid transparent; transition: 0.3s; }
+        .log-item.can-open { cursor: pointer; }
+        .log-item.can-open:hover { background: rgba(255,255,255,0.1); }
         .log-item.open { border-color: var(--primary); box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+        
         .log-header { padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
         .status-icon { font-weight: 900; font-size: 1.1rem; }
         .status-icon.right { color: var(--success); }
@@ -27,15 +35,13 @@
         .log-answer { max-height: 0; padding: 0 12px; font-size: 0.8rem; background: rgba(99, 102, 241, 0.2); transition: 0.3s ease-in-out; overflow: hidden; }
         .log-item.open .log-answer { max-height: 100px; padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
 
-        /* LEADERBOARD REBORN */
+        /* LEADERBOARD */
         #leaderboard { margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
         .lb-title { font-size: 1rem; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .lb-entry { position: relative; padding: 8px 12px; margin-bottom: 6px; border-radius: 8px; background: rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
-        .lb-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.15; z-index: 0; transition: width 1s ease-out; }
-        .lb-rank { font-weight: 900; width: 20px; z-index: 1; }
-        .lb-info { flex-grow: 1; padding-left: 10px; z-index: 1; }
+        .lb-entry { position: relative; padding: 8px 12px; margin-bottom: 6px; border-radius: 8px; background: rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; overflow: hidden; }
+        .lb-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.15; z-index: 0; }
+        .lb-name { font-weight: 700; z-index: 1; flex-grow: 1; margin-left: 10px; }
         .lb-score { font-weight: 800; z-index: 1; color: var(--warning); }
-        .medal-1 { color: #ffd700; } .medal-2 { color: #c0c0c0; } .medal-3 { color: #cd7f32; }
 
         /* MAIN AREA */
         #game-container { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; }
@@ -45,34 +51,38 @@
         #timer-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); display: none; }
         #timer-bar { width: 100%; height: 100%; background: var(--success); transition: width 0.1s linear; }
 
-        /* MENU SCREEN */
-        .menu-card { text-align: center; background: white; color: #333; padding: 40px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 380px; }
+        /* MENU CARDS */
+        .menu-card { text-align: center; background: white; color: #333; padding: 40px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 380px; position: relative; }
         .btn-mode { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; margin: 10px 0; width: 100%; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
         .btn-mode:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-back { background: none; border: none; color: #666; cursor: pointer; font-size: 0.9rem; margin-top: 10px; text-decoration: underline; }
 
         /* CARD */
         .card { width: 420px; height: 300px; perspective: 1000px; cursor: pointer; }
         .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); transform-style: preserve-3d; }
         .card.flipped .card-inner { transform: rotateY(180deg); }
-        .front, .back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; padding: 40px; border-radius: 28px; font-size: 1.6rem; font-weight: 700; box-sizing: border-box; transition: opacity 0.3s; }
+        .front, .back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; padding: 40px; border-radius: 28px; font-size: 1.6rem; font-weight: 700; box-sizing: border-box; }
         .front { background: white; color: #1e293b; }
         .back { background: var(--primary); color: white; transform: rotateY(180deg); }
 
         .btn-group { display: flex; gap: 20px; margin-top: 40px; }
-        button { padding: 18px 35px; border: none; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; }
+        button:not(.btn-back) { padding: 18px 35px; border: none; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; }
         .btn-wrong { background: var(--danger); color: white; }
         .btn-right { background: var(--success); color: white; }
-        .hint-text { font-size: 0.7rem; text-align: center; margin-bottom: 5px; color: var(--warning); font-weight: bold; opacity: 0.7; }
+        
+        #profile-setup input { padding: 12px; width: 80%; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 1rem; text-align: center; }
     </style>
 </head>
 <body>
 
     <aside id="sidebar">
-        <h2 style="margin: 0 0 5px 0;">Flash Focus</h2>
-        <div class="hint-text">Click cards below to review</div>
+        <h2 style="margin: 0;">Flash Focus</h2>
+        <div id="user-tag" style="font-size: 0.8rem; opacity: 0.6; margin-bottom: 15px;">Guest</div>
         
-        <div style="background: var(--primary); padding: 15px; border-radius: 15px; text-align:center; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-            <div style="font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px;">Current Score</div>
+        <div class="hint-text">Click ✔ items to review</div>
+        
+        <div style="background: var(--primary); padding: 15px; border-radius: 15px; text-align:center; margin-bottom: 10px;">
+            <div id="score-label" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">Current Score</div>
             <span id="score-text" style="font-size: 1.6rem; font-weight:900;">0</span>
         </div>
 
@@ -81,7 +91,6 @@
         <div id="leaderboard">
             <div class="lb-title">🏆 Hall of Fame</div>
             <div id="lb-content"></div>
-            <button onclick="localStorage.clear(); updateLeaderboard();" style="background:none; border:none; color:white; font-size:0.6rem; opacity:0.3; cursor:pointer; width:100%; text-align:right;">Clear Records</button>
         </div>
     </aside>
 
@@ -91,21 +100,28 @@
             <div id="timer-container"><div id="timer-bar"></div></div>
         </div>
 
-        <div id="menu-step-1" class="menu-card">
-            <h1 style="margin:0 0 10px 0;">Game Mode</h1>
-            <p style="margin-bottom:20px; color:#666;">Choose your challenge level</p>
+        <div id="profile-setup" class="menu-card">
+            <h1>Welcome!</h1>
+            <p>Enter a nickname for the leaderboard:</p>
+            <input type="text" id="nickname-input" placeholder="Your Name..." maxlength="12">
+            <button class="btn-mode" onclick="saveProfile()">Start Learning</button>
+        </div>
+
+        <div id="menu-step-1" class="menu-card" style="display:none;">
+            <h1>Game Mode</h1>
             <button class="btn-mode" onclick="setMode('Normal')">Standard Study</button>
-            <button class="btn-mode" style="background: #fbbf24; color: #000;" onclick="setMode('Speed')">⚡ Speed Blitz (10s)</button>
+            <button class="btn-mode" style="background: var(--warning); color: #000;" onclick="setMode('Speed')">⚡ Speed Blitz (10s)</button>
         </div>
 
         <div id="menu-step-2" class="menu-card" style="display:none;">
-            <h1 style="margin:0 0 10px 0;">Session Size</h1>
+            <h1>Session Size</h1>
             <button class="btn-mode" onclick="startGame(10)">Sprint (10 Cards)</button>
             <button class="btn-mode" onclick="startGame(50)">Marathon (50 Cards)</button>
+            <button class="btn-back" onclick="goBackToStep1()">← Change Mode</button>
         </div>
         
         <div id="game-ui" style="display: none; flex-direction: column; align-items: center;">
-            <div id="counter" style="margin-bottom: 20px; font-weight: 800; background: rgba(255,255,255,0.1); padding: 8px 20px; border-radius: 30px; font-size: 0.8rem; letter-spacing: 1px;">CARD 1</div>
+            <div id="counter" style="margin-bottom: 20px; font-weight: 800; background: rgba(255,255,255,0.1); padding: 8px 20px; border-radius: 30px;">CARD 1</div>
             <div class="card" id="card" onclick="this.classList.toggle('flipped')">
                 <div class="card-inner"><div class="front" id="q-text"></div><div class="back" id="a-text"></div></div>
             </div>
@@ -117,28 +133,16 @@
 
         <div id="game-over" class="menu-card" style="display:none;">
             <h1 id="over-title">Session Ended</h1>
-            <p id="final-stats" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);"></p>
+            <p id="final-stats"></p>
             <button id="retry-missed-btn" class="btn-mode" style="background: var(--danger);" onclick="replayMissed()">Review Mistakes</button>
             <button class="btn-mode" onclick="location.reload()">Back to Start</button>
         </div>
     </main>
 
     <script>
-        let audioCtx, currentDeck = [], missedCards = [], gameMode = 'Normal', currentIndex = 0, score = 0, lock = false, timerInterval;
-
-        function playSfx(type) {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-            o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0, audioCtx.currentTime);
-            if (type === 'correct') {
-                o.frequency.setValueAtTime(523, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime+0.1);
-                g.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime+0.01); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.2);
-            } else {
-                o.type='sawtooth'; o.frequency.setValueAtTime(120, audioCtx.currentTime);
-                g.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime+0.01); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.3);
-            }
-            o.start(); o.stop(audioCtx.currentTime+0.3);
-        }
+        let audioCtx, currentDeck = [], missedCards = [], gameMode = 'Normal', 
+            currentIndex = 0, score = 0, lock = false, timerInterval, 
+            isReviewMode = false, userName = "Guest";
 
         const rawDeck = [
             { q: "What is the capital of Japan?", a: "Tokyo" },
@@ -193,33 +197,44 @@
             { q: "What is the most spoken language in the world?", a: "Mandarin Chinese" }
         ];
 
-        function updateLeaderboard() {
-            const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
-            const content = document.getElementById('lb-content');
-            content.innerHTML = scores.length ? '' : '<div style="font-size:0.7rem; opacity:0.5; padding:10px;">No records found. Set one!</div>';
-            
-            scores.sort((a,b) => (b.score/b.total) - (a.score/a.total)).slice(0, 5).forEach((s, i) => {
-                const perc = (s.score / s.total) * 100;
-                let medal = i === 0 ? 'medal-1' : i === 1 ? 'medal-2' : i === 2 ? 'medal-3' : '';
-                let rankText = i < 3 ? '★' : i + 1;
-                content.innerHTML += `
-                    <div class="lb-entry">
-                        <div class="lb-bar" style="width: ${perc}%"></div>
-                        <div class="lb-rank ${medal}">${rankText}</div>
-                        <div class="lb-info">${s.mode} (${s.total})</div>
-                        <div class="lb-score">${s.score}/${s.total}</div>
-                    </div>`;
-            });
+        function playSfx(t) {
+            if (!audioCtx) audioCtx = new AudioContext();
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0, audioCtx.currentTime);
+            if (t === 'correct') {
+                o.frequency.setValueAtTime(523, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime+0.1);
+                g.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime+0.01); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.2);
+            } else {
+                o.type='sawtooth'; o.frequency.setValueAtTime(120, audioCtx.currentTime);
+                g.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime+0.01); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.3);
+            }
+            o.start(); o.stop(audioCtx.currentTime+0.3);
         }
 
-        function saveScore(s, t, m) {
-            const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
-            scores.push({score: s, total: t, mode: m});
-            localStorage.setItem('flashScores', JSON.stringify(scores));
+        // PROFILE SYSTEM
+        window.onload = () => {
+            const savedName = localStorage.getItem('flashName');
+            if(savedName) {
+                userName = savedName;
+                document.getElementById('user-tag').innerText = "Player: " + userName;
+                document.getElementById('profile-setup').style.display = 'none';
+                document.getElementById('menu-step-1').style.display = 'block';
+            }
             updateLeaderboard();
         }
 
+        function saveProfile() {
+            const val = document.getElementById('nickname-input').value.trim();
+            userName = val || "Scholar";
+            localStorage.setItem('flashName', userName);
+            document.getElementById('user-tag').innerText = "Player: " + userName;
+            document.getElementById('profile-setup').style.display = 'none';
+            document.getElementById('menu-step-1').style.display = 'block';
+        }
+
+        // NAVIGATION
         function setMode(m) { gameMode = m; document.getElementById('menu-step-1').style.display = 'none'; document.getElementById('menu-step-2').style.display = 'block'; }
+        function goBackToStep1() { document.getElementById('menu-step-2').style.display = 'none'; document.getElementById('menu-step-1').style.display = 'block'; }
 
         function startGame(limit) {
             document.getElementById('menu-step-2').style.display = 'none'; document.getElementById('game-ui').style.display = 'flex';
@@ -255,11 +270,20 @@
             if (lock) return; lock = true; clearInterval(timerInterval);
             const currentQ = currentDeck[currentIndex];
             const logItem = document.createElement('li');
-            logItem.className = 'log-item';
-            logItem.innerHTML = `<div class="log-header" onclick="toggleAnswer(this)"><span>${currentQ.q}</span><span class="status-icon ${isRight?'right':'wrong'}">${isRight?'✔':'✖'}</span></div><div class="log-answer">Answer: ${currentQ.a}</div>`;
+            
+            // Only Correct answers can be opened
+            logItem.className = 'log-item' + (isRight ? ' can-open' : '');
+            logItem.innerHTML = `
+                <div class="log-header" ${isRight ? 'onclick="toggleAnswer(this)"' : ''}>
+                    <span>${currentQ.q}</span>
+                    <span class="status-icon ${isRight?'right':'wrong'}">${isRight?'✔':'✖'}</span>
+                </div>
+                <div class="log-answer">Answer: ${currentQ.a}</div>`;
             document.getElementById('log-list').prepend(logItem);
+            
             if (isRight) {
-                playSfx('correct'); score++; document.getElementById('score-text').innerText = score;
+                playSfx('correct'); score++; 
+                document.getElementById('score-text').innerText = score;
                 setTimeout(() => { currentIndex++; updateUI(); }, 500);
             } else {
                 playSfx('wrong'); missedCards.push(currentQ); document.getElementById('card').classList.add('flipped');
@@ -269,19 +293,29 @@
 
         function showGameOver() {
             clearInterval(timerInterval);
-            saveScore(score, currentDeck.length, gameMode);
-            document.getElementById('progress-bar-fill').style.width = "100%";
             document.getElementById('game-ui').style.display = 'none';
             document.getElementById('game-over').style.display = 'block';
-            document.getElementById('final-stats').innerText = `RESULT: ${score} / ${currentDeck.length}`;
-            document.getElementById('retry-missed-btn').style.display = missedCards.length > 0 ? 'block' : 'none';
+            
+            if (isReviewMode) {
+                document.getElementById('over-title').innerText = "Practice Done!";
+                document.getElementById('final-stats').innerText = "You successfully reviewed your mistakes.";
+                document.getElementById('retry-missed-btn').style.display = 'none';
+            } else {
+                saveScore(score, currentDeck.length, gameMode);
+                document.getElementById('final-stats').innerText = `Final Score: ${score} / ${currentDeck.length}`;
+                document.getElementById('retry-missed-btn').style.display = missedCards.length > 0 ? 'block' : 'none';
+            }
         }
 
         function replayMissed() {
+            isReviewMode = true; // Mark as review mode
             currentDeck = [...missedCards]; missedCards = []; currentIndex = 0; score = 0;
-            document.getElementById('game-over').style.display = 'none'; document.getElementById('game-ui').style.display = 'flex';
-            if (gameMode === 'Speed') document.getElementById('timer-container').style.display = 'block';
-            document.getElementById('log-list').innerHTML = ""; document.getElementById('score-text').innerText = "0"; updateUI();
+            document.getElementById('score-label').innerText = "Practice Correct";
+            document.getElementById('game-over').style.display = 'none'; 
+            document.getElementById('game-ui').style.display = 'flex';
+            document.getElementById('log-list').innerHTML = ""; 
+            document.getElementById('score-text').innerText = "0"; 
+            updateUI();
         }
 
         function toggleAnswer(el) {
@@ -290,7 +324,27 @@
             if (!isOpen) p.classList.add('open');
         }
 
-        updateLeaderboard();
+        function updateLeaderboard() {
+            const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
+            const content = document.getElementById('lb-content');
+            content.innerHTML = scores.length ? '' : '<div style="font-size:0.7rem; opacity:0.5;">No records yet!</div>';
+            scores.sort((a,b) => (b.score/b.total) - (a.score/a.total)).slice(0, 5).forEach((s, i) => {
+                content.innerHTML += `
+                    <div class="lb-entry">
+                        <div class="lb-bar" style="width: ${(s.score/s.total)*100}%"></div>
+                        <span style="z-index:1">${i+1}.</span>
+                        <div class="lb-name">${s.name} (${s.mode})</div>
+                        <div class="lb-score">${s.score}/${s.total}</div>
+                    </div>`;
+            });
+        }
+
+        function saveScore(s, t, m) {
+            const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
+            scores.push({name: userName, score: s, total: t, mode: m});
+            localStorage.setItem('flashScores', JSON.stringify(scores));
+            updateLeaderboard();
+        }
     </script>
 </body>
 </html>
