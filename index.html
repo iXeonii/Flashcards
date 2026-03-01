@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcard Pro - Ultimate Edition</title>
+    <title>Flashcard Pro - Grandmaster</title>
     <style>
         :root {
             --primary: #6366f1;
@@ -29,17 +29,31 @@
             z-index: 10;
         }
 
-        #log-list { flex-grow: 1; overflow-y: auto; list-style: none; padding: 0; margin-top: 15px; }
-        .log-item { margin-bottom: 8px; border-radius: 12px; background: rgba(255,255,255,0.05); overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
-        .log-header { padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+        #log-list { flex-grow: 1; overflow-y: auto; list-style: none; padding: 0; margin-top: 10px; }
         
-        /* Colored Indicators */
+        .log-item { 
+            margin-bottom: 8px; border-radius: 12px; 
+            background: rgba(255,255,255,0.05); overflow: hidden; 
+            border: 2px solid transparent; transition: 0.3s;
+        }
+
+        /* Hover & Open States */
+        .log-item.unlocked:hover { cursor: pointer; background: rgba(255,255,255,0.1); }
+        .log-item.open { border-color: var(--primary); box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+
+        .log-header { padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
         .status-icon { font-weight: 900; font-size: 1.1rem; }
         .status-icon.right { color: var(--success); }
         .status-icon.wrong { color: var(--danger); }
 
         .log-answer { max-height: 0; padding: 0 12px; font-size: 0.8rem; background: rgba(99, 102, 241, 0.2); transition: 0.3s ease-in-out; overflow: hidden; }
         .log-item.open .log-answer { max-height: 100px; padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+
+        /* LEADERBOARD SECTION */
+        #leaderboard {
+            margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .lb-entry { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; opacity: 0.8; }
 
         /* MAIN AREA */
         #game-container { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; }
@@ -50,7 +64,7 @@
         #progress-bar-fill { width: 0%; height: 100%; background: var(--success); transition: width 0.4s ease; }
         
         #timer-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); display: none; }
-        #timer-bar { width: 100%; height: 100%; background: var(--warning); transition: width 0.1s linear, background-color 0.3s; }
+        #timer-bar { width: 100%; height: 100%; background: var(--success); transition: width 0.1s linear, background-color 0.3s; }
 
         /* MENU SCREEN */
         .menu-card { text-align: center; background: white; color: #333; padding: 40px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 350px; }
@@ -69,16 +83,26 @@
         button { padding: 18px 35px; border: none; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; }
         .btn-wrong { background: var(--danger); color: white; }
         .btn-right { background: var(--success); color: white; }
+
+        /* ANIMATIONS */
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        .hint-text { font-size: 0.7rem; text-align: center; margin-bottom: 5px; color: var(--warning); animation: pulse 2s infinite; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <aside id="sidebar">
-        <h2>Review Log</h2>
-        <div style="background: var(--primary); padding: 15px; border-radius: 15px; text-align:center;">
+        <h2 style="margin-bottom: 5px;">Review Log</h2>
+        <div class="hint-text">Click ✔ to reveal answers</div>
+        <div style="background: var(--primary); padding: 15px; border-radius: 15px; text-align:center; margin-bottom: 10px;">
             <span id="score-text" style="font-size: 1.4rem; font-weight:bold;">Score: 0</span>
         </div>
         <ul id="log-list"></ul>
+
+        <div id="leaderboard">
+            <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">🏆 High Scores</h3>
+            <div id="lb-content"></div>
+        </div>
     </aside>
 
     <main id="game-container">
@@ -122,20 +146,15 @@
         let audioCtx;
         function playSfx(type) {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
             gain.gain.setValueAtTime(0, audioCtx.currentTime);
             if (type === 'correct') {
-                osc.frequency.setValueAtTime(523, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
-                gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.01);
-                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+                osc.frequency.setValueAtTime(523, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+                gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.01); gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
             } else {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(120, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.01);
-                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.01); gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
             }
             osc.start(); osc.stop(audioCtx.currentTime + 0.3);
         }
@@ -195,6 +214,22 @@
 
         let currentDeck = [], missedCards = [], gameMode = 'normal', currentIndex = 0, score = 0, lock = false, timerInterval;
 
+        function updateLeaderboard() {
+            const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
+            const content = document.getElementById('lb-content');
+            content.innerHTML = scores.length ? '' : '<div style="font-size:0.7rem; opacity:0.5">No scores yet!</div>';
+            scores.sort((a,b) => b.score - a.score).slice(0, 5).forEach((s, i) => {
+                content.innerHTML += `<div class="lb-entry"><span>${i+1}. ${s.mode}</span><span>${s.score}/${s.total}</span></div>`;
+            });
+        }
+
+        function saveScore(s, t, m) {
+            const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
+            scores.push({score: s, total: t, mode: m, date: new Date().toLocaleDateString()});
+            localStorage.setItem('flashScores', JSON.stringify(scores));
+            updateLeaderboard();
+        }
+
         function setMode(m) {
             gameMode = m;
             document.getElementById('menu-step-1').style.display = 'none';
@@ -214,11 +249,13 @@
             if (gameMode !== 'speed') return;
             let timeLeft = 100;
             const bar = document.getElementById('timer-bar');
-            bar.style.backgroundColor = "var(--warning)";
             timerInterval = setInterval(() => {
                 timeLeft -= 1;
                 bar.style.width = timeLeft + "%";
-                if (timeLeft < 30) bar.style.backgroundColor = "var(--danger)";
+                if (timeLeft > 60) bar.style.backgroundColor = "var(--success)";
+                else if (timeLeft > 30) bar.style.backgroundColor = "var(--warning)";
+                else bar.style.backgroundColor = "var(--danger)";
+                
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     handleAnswer(false); 
@@ -228,10 +265,7 @@
 
         function updateUI() {
             if (currentIndex >= currentDeck.length) { showGameOver(); return; }
-            
-            // Progress Bar Update
             document.getElementById('progress-bar-fill').style.width = (currentIndex / currentDeck.length) * 100 + "%";
-            
             const q = document.getElementById('q-text'), a = document.getElementById('a-text');
             q.style.opacity = "0"; a.style.opacity = "0";
             document.getElementById('card').classList.remove('flipped');
@@ -250,16 +284,12 @@
             clearInterval(timerInterval);
             const currentQ = currentDeck[currentIndex];
             const logItem = document.createElement('li');
-            logItem.className = 'log-item' + (isRight ? ' unlocked' : '');
+            logItem.className = 'log-item unlocked' + (isRight ? '' : ' wrong-item');
             
-            // Updated Colored Icons
-            const iconClass = isRight ? 'status-icon right' : 'status-icon wrong';
-            const iconText = isRight ? '✔' : '✖';
-
             logItem.innerHTML = `
-                <div class="log-header" onclick="${isRight ? 'toggleAnswer(this)' : ''}">
-                    <span>${currentQ.q}</span>
-                    <span class="${iconClass}">${iconText}</span>
+                <div class="log-header" onclick="toggleAnswer(this)">
+                    <span style="max-width: 80%">${currentQ.q}</span>
+                    <span class="status-icon ${isRight ? 'right' : 'wrong'}">${isRight ? '✔' : '✖'}</span>
                 </div>
                 <div class="log-answer">Answer: ${currentQ.a}</div>
             `;
@@ -278,11 +308,12 @@
 
         function showGameOver() {
             clearInterval(timerInterval);
+            saveScore(score, currentDeck.length, gameMode.toUpperCase());
             document.getElementById('progress-bar-fill').style.width = "100%";
             document.getElementById('game-ui').style.display = 'none';
             document.getElementById('timer-container').style.display = 'none';
             document.getElementById('game-over').style.display = 'block';
-            document.getElementById('final-stats').innerText = `Mode: ${gameMode.toUpperCase()} | Score: ${score}/${currentDeck.length}`;
+            document.getElementById('final-stats').innerText = `Score: ${score}/${currentDeck.length}`;
             document.getElementById('retry-missed-btn').style.display = missedCards.length > 0 ? 'block' : 'none';
         }
 
@@ -301,6 +332,8 @@
             document.querySelectorAll('.log-item').forEach(i => i.classList.remove('open'));
             if (!isOpen) p.classList.add('open');
         }
+
+        updateLeaderboard();
     </script>
 </body>
 </html>
