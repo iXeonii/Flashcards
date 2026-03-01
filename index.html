@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcard Pro - Ultra Clean Edition</title>
+    <title>Flashcard Pro - Sound Edition</title>
     <style>
         :root {
             --primary: #6366f1;
@@ -83,7 +83,6 @@
             display: flex; align-items: center; justify-content: center; padding: 40px; 
             border-radius: 28px; font-size: 1.5rem; font-weight: 700; box-shadow: 0 20px 50px rgba(0,0,0,0.4);
             box-sizing: border-box;
-            /* VITAL: This handles the smooth fade-in/out of text */
             transition: opacity 0.3s ease-in-out; 
         }
         .front { background: white; color: #1e293b; }
@@ -144,6 +143,35 @@
     </main>
 
     <script>
+        // SOUND EFFECTS (Using short Base64 sounds)
+        const correctSound = new Audio("data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQYAAAAfAh8CHwIfAh8CHw==");
+        // Frequency-based synth sounds (cleaner for web)
+        function playSfx(type) {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1); // A5
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            }
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.3);
+        }
+
         const rawDeck = [
             { q: "What is the capital of Japan?", a: "Tokyo" },
             { q: "How many continents are there?", a: "7" },
@@ -214,24 +242,17 @@
             const aText = document.getElementById('a-text');
             const card = document.getElementById('card');
 
-            // 1. Fade out current text
             qText.style.opacity = "0";
             aText.style.opacity = "0";
-
-            // 2. Flip card back to front
             card.classList.remove('flipped');
 
-            // 3. Wait for flip/fade-out to finish before updating content
             setTimeout(() => {
                 qText.innerText = deck[currentIndex].q;
                 aText.innerText = deck[currentIndex].a;
                 document.getElementById('counter').innerText = `CARD ${currentIndex + 1} / ${deck.length}`;
                 document.getElementById('progress-bar').style.width = `${((currentIndex) / deck.length) * 100}%`;
-                
-                // 4. Fade new text in
                 qText.style.opacity = "1";
                 aText.style.opacity = "1";
-                
                 lock = false;
             }, 300); 
         }
@@ -242,7 +263,6 @@
 
             const currentQ = deck[currentIndex];
             const logList = document.getElementById('log-list');
-            
             const logItem = document.createElement('li');
             logItem.className = 'log-item' + (isRight ? ' unlocked' : '');
             
@@ -255,10 +275,12 @@
             `;
             
             if (isRight) {
+                playSfx('correct'); // PLAY SOUND
                 score++;
                 document.getElementById('score-text').innerText = `Score: ${score}`;
                 setTimeout(next, 500);
             } else {
+                playSfx('wrong'); // PLAY SOUND
                 document.getElementById('card').classList.add('flipped');
                 setTimeout(next, 2000);
             }
@@ -268,15 +290,8 @@
         function toggleAnswer(el) {
             const parent = el.parentElement;
             const isOpen = parent.classList.contains('open');
-            
-            // Accordion logic: close all others
-            document.querySelectorAll('.log-item').forEach(item => {
-                item.classList.remove('open');
-            });
-
-            if (!isOpen) {
-                parent.classList.add('open');
-            }
+            document.querySelectorAll('.log-item').forEach(item => item.classList.remove('open'));
+            if (!isOpen) parent.classList.add('open');
         }
 
         function next() {
@@ -284,7 +299,6 @@
             updateUI();
         }
 
-        // Initialize first card
         updateUI();
     </script>
 </body>
