@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcard Pro - Smart Tutor</title>
+    <title>Flashcard Pro - Speed Run</title>
     <style>
         :root {
             --primary: #6366f1;
@@ -29,67 +29,35 @@
         }
 
         #log-list { flex-grow: 1; overflow-y: auto; list-style: none; padding: 0; margin-top: 15px; }
-
-        .log-item { 
-            margin-bottom: 8px; border-radius: 12px;
-            background: rgba(255,255,255,0.05); overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
+        .log-item { margin-bottom: 8px; border-radius: 12px; background: rgba(255,255,255,0.05); overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
         .log-header { padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
-        .log-item.unlocked .log-header { cursor: pointer; }
-        .log-item.unlocked .log-header:hover { background: rgba(255,255,255,0.15); }
-
-        .log-answer {
-            max-height: 0; padding: 0 12px; font-size: 0.8rem;
-            background: rgba(99, 102, 241, 0.2); color: #c7d2fe;
-            transition: all 0.3s ease-in-out; overflow: hidden;
-        }
-
+        .log-answer { max-height: 0; padding: 0 12px; font-size: 0.8rem; background: rgba(99, 102, 241, 0.2); transition: 0.3s ease-in-out; overflow: hidden; }
         .log-item.open .log-answer { max-height: 100px; padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
 
         /* MAIN AREA */
-        #game-container {
-            flex-grow: 1; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; position: relative;
-            padding: 20px;
-        }
+        #game-container { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; }
 
-        /* START SCREEN */
-        #start-screen {
-            text-align: center; background: white; color: #333; padding: 40px; border-radius: 30px; z-index: 30;
-        }
+        /* TIMER BAR */
+        #timer-container { position: absolute; top: 8px; left: 0; width: 100%; height: 6px; background: rgba(255,255,255,0.1); display: none; }
+        #timer-bar { width: 100%; height: 100%; background: #fbbf24; transition: width 0.1s linear; }
 
-        .progress-container { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: rgba(0,0,0,0.3); }
-        #progress-bar { width: 0%; height: 100%; background: var(--success); transition: 0.4s ease; }
+        /* MENU SCREEN */
+        .menu-card { text-align: center; background: white; color: #333; padding: 40px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 350px; }
+        .btn-mode { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; margin: 10px 0; width: 100%; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
+        .btn-mode:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
-        .card { width: 400px; height: 280px; perspective: 1000px; cursor: pointer; z-index: 5; }
-        .card-inner { 
-            position: relative; width: 100%; height: 100%; text-align: center; 
-            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); transform-style: preserve-3d; 
-        }
+        /* CARD */
+        .card { width: 400px; height: 280px; perspective: 1000px; cursor: pointer; }
+        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); transform-style: preserve-3d; }
         .card.flipped .card-inner { transform: rotateY(180deg); }
-
-        .front, .back { 
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; 
-            display: flex; align-items: center; justify-content: center; padding: 40px; 
-            border-radius: 28px; font-size: 1.5rem; font-weight: 700; box-shadow: 0 20px 50px rgba(0,0,0,0.4);
-            box-sizing: border-box; transition: opacity 0.3s ease-in-out; 
-        }
+        .front, .back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; padding: 40px; border-radius: 28px; font-size: 1.5rem; font-weight: 700; box-sizing: border-box; }
         .front { background: white; color: #1e293b; }
         .back { background: var(--primary); color: white; transform: rotateY(180deg); }
 
-        .btn-group { display: flex; gap: 20px; margin-top: 40px; z-index: 20; }
-        button { 
-            padding: 18px 35px; border: none; border-radius: 16px; font-weight: 800; 
-            cursor: pointer; transition: 0.2s; font-size: 1rem; text-transform: uppercase;
-        }
+        .btn-group { display: flex; gap: 20px; margin-top: 40px; }
+        button { padding: 18px 35px; border: none; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; }
         .btn-wrong { background: var(--danger); color: white; }
         .btn-right { background: var(--success); color: white; }
-        .btn-mode { background: var(--primary); color: white; margin: 10px; width: 200px;}
-        button:hover { filter: brightness(1.1); transform: translateY(-2px); }
-
-        #game-over { display: none; text-align: center; background: white; color: #333; padding: 50px; border-radius: 30px; }
     </style>
 </head>
 <body>
@@ -103,11 +71,17 @@
     </aside>
 
     <main id="game-container">
-        <div class="progress-container"><div id="progress-bar"></div></div>
+        <div id="timer-container"><div id="timer-bar"></div></div>
 
-        <div id="start-screen">
-            <h1 style="margin-top:0">Choose Your Session</h1>
-            <button class="btn-mode" onclick="startGame(10)">Sprint (10 Cards)</button><br>
+        <div id="menu-step-1" class="menu-card">
+            <h1>Game Mode</h1>
+            <button class="btn-mode" onclick="setMode('normal')">Normal Mode</button>
+            <button class="btn-mode" style="background: #fbbf24; color: #000;" onclick="setMode('speed')">⚡ Speed Run (10s/card)</button>
+        </div>
+
+        <div id="menu-step-2" class="menu-card" style="display:none;">
+            <h1>How many cards?</h1>
+            <button class="btn-mode" onclick="startGame(10)">Sprint (10 Cards)</button>
             <button class="btn-mode" onclick="startGame(50)">Marathon (50 Cards)</button>
         </div>
         
@@ -122,23 +96,38 @@
             </div>
         </div>
 
-        <div id="game-over">
-            <h1 id="over-title">Session Complete!</h1>
+        <div id="game-over" class="menu-card" style="display:none;">
+            <h1 id="over-title">Finished!</h1>
             <p id="final-stats"></p>
-            <button id="retry-missed-btn" class="btn-mode" style="display:none; background: var(--danger);" onclick="replayMissed()">Study Missed Cards</button>
-            <button class="btn-mode" onclick="location.reload()">New Full Game</button>
+            <button id="retry-missed-btn" class="btn-mode" style="background: var(--danger);" onclick="replayMissed()">Study Missed Cards</button>
+            <button class="btn-mode" onclick="location.reload()">Menu</button>
         </div>
     </main>
 
     <script>
-        const playSfx = (t) => {
-            const c = new AudioContext(); const o = c.createOscillator(); const g = c.createGain();
-            o.connect(g); g.connect(c.destination);
-            if(t==='correct'){ o.frequency.setValueAtTime(523,c.currentTime); o.frequency.exponentialRampToValueAtTime(880,c.currentTime+0.1); }
-            else { o.type='sawtooth'; o.frequency.setValueAtTime(150,c.currentTime); }
-            g.gain.setValueAtTime(0.1,c.currentTime); g.gain.linearRampToValueAtTime(0.01,c.currentTime+0.2);
-            o.start(); o.stop(c.currentTime+0.2);
-        };
+        let audioCtx;
+        function playSfx(type) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            // MASTER LIMITER (Prevents loud random pops)
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            
+            if (type === 'correct') {
+                osc.frequency.setValueAtTime(523, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+                gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.01);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.01);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+            }
+            osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        }
 
         const rawDeck = [
             { q: "What is the capital of Japan?", a: "Tokyo" },
@@ -193,52 +182,55 @@
             { q: "What is the most spoken language in the world?", a: "Mandarin Chinese" }
         ];
 
-        let currentDeck = [];
-        let missedCards = [];
-        let currentIndex = 0;
-        let score = 0;
-        let lock = false;
+        let currentDeck = [], missedCards = [], gameMode = 'normal', currentIndex = 0, score = 0, lock = false, timerInterval;
+
+        function setMode(m) {
+            gameMode = m;
+            document.getElementById('menu-step-1').style.display = 'none';
+            document.getElementById('menu-step-2').style.display = 'block';
+        }
 
         function startGame(limit) {
-            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('menu-step-2').style.display = 'none';
             document.getElementById('game-ui').style.display = 'flex';
+            if (gameMode === 'speed') document.getElementById('timer-container').style.display = 'block';
             currentDeck = [...rawDeck].sort(() => Math.random() - 0.5).slice(0, limit);
             updateUI();
         }
 
-        function replayMissed() {
-            currentDeck = [...missedCards].sort(() => Math.random() - 0.5);
-            missedCards = [];
-            currentIndex = 0;
-            score = 0;
-            document.getElementById('game-over').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'flex';
-            document.getElementById('log-list').innerHTML = "";
-            document.getElementById('score-text').innerText = "Score: 0";
-            updateUI();
+        function startTimer() {
+            clearInterval(timerInterval);
+            if (gameMode !== 'speed') return;
+            let timeLeft = 100;
+            const bar = document.getElementById('timer-bar');
+            timerInterval = setInterval(() => {
+                timeLeft -= 1;
+                bar.style.width = timeLeft + "%";
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleAnswer(false); // Timeout = Wrong
+                }
+            }, 100);
         }
 
         function updateUI() {
-            if (currentIndex >= currentDeck.length) {
-                showGameOver();
-                return;
-            }
-            const q = document.getElementById('q-text');
-            const a = document.getElementById('a-text');
+            if (currentIndex >= currentDeck.length) { showGameOver(); return; }
+            const q = document.getElementById('q-text'), a = document.getElementById('a-text');
             q.style.opacity = "0"; a.style.opacity = "0";
             document.getElementById('card').classList.remove('flipped');
             setTimeout(() => {
                 q.innerText = currentDeck[currentIndex].q;
                 a.innerText = currentDeck[currentIndex].a;
                 document.getElementById('counter').innerText = `CARD ${currentIndex + 1} / ${currentDeck.length}`;
-                document.getElementById('progress-bar').style.width = `${(currentIndex / currentDeck.length) * 100}%`;
                 q.style.opacity = "1"; a.style.opacity = "1";
                 lock = false;
+                startTimer();
             }, 300);
         }
 
         function handleAnswer(isRight) {
             if (lock) return; lock = true;
+            clearInterval(timerInterval);
             const currentQ = currentDeck[currentIndex];
             const logItem = document.createElement('li');
             logItem.className = 'log-item' + (isRight ? ' unlocked' : '');
@@ -250,19 +242,29 @@
                 document.getElementById('score-text').innerText = `Score: ${score}`;
                 setTimeout(() => { currentIndex++; updateUI(); }, 500);
             } else {
-                playSfx('wrong');
-                missedCards.push(currentQ);
+                playSfx('wrong'); missedCards.push(currentQ);
                 document.getElementById('card').classList.add('flipped');
                 setTimeout(() => { currentIndex++; updateUI(); }, 2000);
             }
         }
 
         function showGameOver() {
+            clearInterval(timerInterval);
             document.getElementById('game-ui').style.display = 'none';
+            document.getElementById('timer-container').style.display = 'none';
             document.getElementById('game-over').style.display = 'block';
-            document.getElementById('progress-bar').style.width = "100%";
-            document.getElementById('final-stats').innerText = `You got ${score} out of ${currentDeck.length} correct.`;
-            document.getElementById('retry-missed-btn').style.display = missedCards.length > 0 ? 'inline-block' : 'none';
+            document.getElementById('final-stats').innerText = `Mode: ${gameMode.toUpperCase()} | Score: ${score}/${currentDeck.length}`;
+            document.getElementById('retry-missed-btn').style.display = missedCards.length > 0 ? 'block' : 'none';
+        }
+
+        function replayMissed() {
+            currentDeck = [...missedCards]; missedCards = []; currentIndex = 0; score = 0;
+            document.getElementById('game-over').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'flex';
+            if (gameMode === 'speed') document.getElementById('timer-container').style.display = 'block';
+            document.getElementById('log-list').innerHTML = "";
+            document.getElementById('score-text').innerText = "Score: 0";
+            updateUI();
         }
 
         function toggleAnswer(el) {
