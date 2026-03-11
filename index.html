@@ -258,6 +258,7 @@
         /* --- DECK BUILDER --- */
         #deck-list-container { max-height: 200px; overflow-y: auto; margin: 10px 0; border: 1px solid #eee; border-radius: 10px; padding: 5px; }
         .deck-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem; align-items: center; }
+        .deck-item.active-selection { border-left: 4px solid var(--primary); background: rgba(99, 102, 241, 0.05); }
         .deck-actions { display: flex; gap: 5px; }
         .small-btn { padding: 4px 8px; font-size: 0.7rem; border-radius: 5px; border: none; cursor: pointer; }
 
@@ -334,7 +335,7 @@
         <div id="screen-deck-editor" class="menu-card" style="width: 500px;">
             <h2 id="editor-title">Create Deck</h2>
             <input type="text" id="deck-name-input" placeholder="Deck Name" class="deck-input">
-            <div id="cards-editor-area" style="max-height: 250px; overflow-y: auto; margin-bottom: 10px;">
+            <div id="cards-editor-area" style="max-height: 250px; overflow-y: auto; margin-bottom: 10px; padding-right: 5px;">
                 </div>
             <button class="small-btn" style="background: #eee; width: 100%; margin-bottom: 10px;" onclick="addEditorRow()">+ Add Card</button>
             <button class="btn-mode" onclick="saveCustomDeck()">Save Deck</button>
@@ -391,16 +392,11 @@
 
     <script>
         /**
-         * GLOBAL STATE & CONSTANTS
+         * GLOBAL STATE
          */
         let audioCtx, currentDeck = [], missedCards = [], gameMode = 'Normal', currentIndex = 0, score = 0, lock = false, timerInterval, isReviewMode = false, userName = "";
-        let activeDeck = null; // null means default rawDeck
-        
-        // Streak Logic
-        let currentStreak = 0;
-        let bestStreak = 0;
-
-        // Settings
+        let activeDeckId = 'standard'; // Tracks currently used deck
+        let currentStreak = 0, bestStreak = 0;
         let settings = { sfx: true, autofail: true };
 
         const rawDeck = [
@@ -424,9 +420,11 @@
             const savedSettings = localStorage.getItem('flashSettings');
             
             if(savedSettings) {
-                settings = JSON.parse(savedSettings);
-                document.getElementById('setting-sfx').checked = settings.sfx;
-                document.getElementById('setting-autofail').checked = settings.autofail;
+                try {
+                    settings = JSON.parse(savedSettings);
+                    document.getElementById('setting-sfx').checked = settings.sfx;
+                    document.getElementById('setting-autofail').checked = settings.autofail;
+                } catch(e) { console.error("Settings corrupted"); }
             }
 
             if(savedName) {
@@ -441,108 +439,94 @@
         };
 
         /**
-         * AUDIO SYSTEM (Web Audio API)
+         * AUDIO SYSTEM
          */
         function playSfx(t) {
             if (!settings.sfx) return;
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            
-            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-            o.connect(g); g.connect(audioCtx.destination);
-            g.gain.setValueAtTime(0, audioCtx.currentTime);
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination);
+                g.gain.setValueAtTime(0, audioCtx.currentTime);
 
-            if (t === 'correct') {
-                o.frequency.setValueAtTime(523, audioCtx.currentTime);
-                o.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime+0.1);
-                g.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime+0.01);
-                g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.2);
-            } else {
-                o.type = 'sawtooth';
-                o.frequency.setValueAtTime(120, audioCtx.currentTime);
-                g.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime+0.01);
-                g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.4);
-            }
-            o.start(); o.stop(audioCtx.currentTime+0.4);
+                if (t === 'correct') {
+                    o.frequency.setValueAtTime(523, audioCtx.currentTime);
+                    o.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime+0.1);
+                    g.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime+0.01);
+                    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.2);
+                } else {
+                    o.type = 'sawtooth';
+                    o.frequency.setValueAtTime(120, audioCtx.currentTime);
+                    g.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime+0.01);
+                    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.4);
+                }
+                o.start(); o.stop(audioCtx.currentTime+0.4);
+            } catch(e) { console.log("Audio play blocked"); }
         }
 
         /**
-         * NAVIGATION
+         * PERSISTENCE & DECK MANAGEMENT
          */
-        function showScreen(screenId) {
-            document.querySelectorAll('.menu-card, #game-ui').forEach(s => s.style.display = 'none');
-            const el = document.getElementById(screenId);
-            el.style.display = (screenId === 'game-ui') ? 'flex' : 'block';
-        }
-
-        function saveProfile() {
-            const val = document.getElementById('nickname-input').value.trim();
-            if(!val) return alert("Enter a name!");
-            userName = val;
-            localStorage.setItem('flashName', userName);
-            document.getElementById('user-display').innerText = userName;
-            showScreen('screen-mode');
-        }
-
-        function logout() {
-            if(confirm("Logout and clear profile?")) {
-                localStorage.removeItem('flashName');
-                location.reload();
-            }
-        }
-
-        /**
-         * SETTINGS & DECK BUILDER LOGIC
-         */
-        function toggleSettings() {
-            const pop = document.getElementById('settings-popover');
-            pop.style.display = pop.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function updateSettings() {
-            settings.sfx = document.getElementById('setting-sfx').checked;
-            settings.autofail = document.getElementById('setting-autofail').checked;
-            localStorage.setItem('flashSettings', JSON.stringify(settings));
-        }
-
         function getCustomDecks() {
-            return JSON.parse(localStorage.getItem('flashCustomDecks') || '[]');
+            try {
+                const stored = localStorage.getItem('flashCustomDecks');
+                const decks = stored ? JSON.parse(stored) : [];
+                // Validate structure: must be an array of objects with cards array
+                return Array.isArray(decks) ? decks.filter(d => d && d.name && Array.isArray(d.cards)) : [];
+            } catch(e) {
+                console.error("Corrupted deck storage");
+                return [];
+            }
         }
 
         function renderDeckList() {
             const container = document.getElementById('deck-list-container');
             const decks = getCustomDecks();
-            container.innerHTML = `<div class="deck-item"><span>Standard Studio Deck</span><button class="small-btn" style="background:var(--primary); color:white" onclick="selectDeck(null)">Use</button></div>`;
             
+            // Render Standard
+            let html = `
+                <div class="deck-item ${activeDeckId === 'standard' ? 'active-selection' : ''}">
+                    <span style="font-weight:900;">Standard Studio Deck</span>
+                    <button class="small-btn" style="background:var(--primary); color:white" onclick="selectDeck('standard')">Use</button>
+                </div>`;
+            
+            // Render Custom
             decks.forEach((deck, index) => {
-                container.innerHTML += `
-                    <div class="deck-item">
+                const id = `custom-${index}`;
+                html += `
+                    <div class="deck-item ${activeDeckId === id ? 'active-selection' : ''}">
                         <span style="font-weight:bold">${deck.name} (${deck.cards.length})</span>
                         <div class="deck-actions">
-                            <button class="small-btn" style="background:var(--primary); color:white" onclick="selectDeck(${index})">Use</button>
+                            <button class="small-btn" style="background:var(--primary); color:white" onclick="selectDeck('${id}')">Use</button>
                             <button class="small-btn" style="background:#ddd" onclick="showDeckEditor(${index})">Edit</button>
                             <button class="small-btn" style="background:var(--danger); color:white" onclick="deleteDeck(${index})">×</button>
                         </div>
                     </div>`;
             });
+            container.innerHTML = html;
         }
 
-        function selectDeck(index) {
-            if (index === null) activeDeck = null;
-            else activeDeck = getCustomDecks()[index];
+        function selectDeck(id) {
+            activeDeckId = id;
+            renderDeckList();
             showScreen('screen-mode');
         }
 
         function deleteDeck(index) {
-            if(!confirm("Delete this deck?")) return;
-            let decks = getCustomDecks();
+            if(!confirm("Delete this deck permanently?")) return;
+            const decks = getCustomDecks();
             decks.splice(index, 1);
             localStorage.setItem('flashCustomDecks', JSON.stringify(decks));
+            
+            // If deleting the active deck, reset to standard
+            if (activeDeckId === `custom-${index}`) activeDeckId = 'standard';
+            
             renderDeckList();
         }
 
-        let editingDeckIndex = -1;
+        let editingIndex = -1;
         function showDeckEditor(index = -1) {
-            editingDeckIndex = index;
+            editingIndex = index;
             const area = document.getElementById('cards-editor-area');
             const nameInput = document.getElementById('deck-name-input');
             area.innerHTML = '';
@@ -562,12 +546,10 @@
 
         function addEditorRow(q = "", a = "") {
             const div = document.createElement('div');
-            div.style.display = "flex";
-            div.style.gap = "5px";
-            div.style.marginBottom = "5px";
+            div.style.display = "flex"; div.style.gap = "5px"; div.style.marginBottom = "5px";
             div.innerHTML = `
-                <input type="text" placeholder="Q" class="deck-input q-val" style="margin:0; flex:1" value="${q}">
-                <input type="text" placeholder="A" class="deck-input a-val" style="margin:0; flex:1" value="${a}">
+                <input type="text" placeholder="Question" class="deck-input q-val" style="margin:0; flex:1" value="${q.replace(/"/g, '&quot;')}">
+                <input type="text" placeholder="Answer" class="deck-input a-val" style="margin:0; flex:1" value="${a.replace(/"/g, '&quot;')}">
                 <button class="small-btn" style="background:var(--danger); color:white" onclick="this.parentElement.remove()">×</button>
             `;
             document.getElementById('cards-editor-area').appendChild(div);
@@ -575,25 +557,25 @@
 
         function saveCustomDeck() {
             const name = document.getElementById('deck-name-input').value.trim();
-            if(!name) return alert("Deck needs a name!");
+            if(!name) return alert("Please enter a deck name.");
             
             const cards = [];
-            const qs = document.querySelectorAll('.q-val');
-            const as = document.querySelectorAll('.a-val');
+            const qNodes = document.querySelectorAll('.q-val');
+            const aNodes = document.querySelectorAll('.a-val');
             
-            qs.forEach((q, i) => {
-                if(q.value.trim() && as[i].value.trim()) {
-                    cards.push({ q: q.value.trim(), a: as[i].value.trim() });
-                }
+            qNodes.forEach((node, i) => {
+                const qV = node.value.trim();
+                const aV = aNodes[i].value.trim();
+                if(qV && aV) cards.push({ q: qV, a: aV });
             });
 
-            if(cards.length === 0) return alert("Add at least one card!");
+            if(cards.length === 0) return alert("Deck must have at least one valid card (Question + Answer).");
 
-            let decks = getCustomDecks();
-            const deckData = { name, cards };
+            const decks = getCustomDecks();
+            const payload = { name, cards };
 
-            if(editingDeckIndex === -1) decks.push(deckData);
-            else decks[editingDeckIndex] = deckData;
+            if(editingIndex === -1) decks.push(payload);
+            else decks[editingIndex] = payload;
 
             localStorage.setItem('flashCustomDecks', JSON.stringify(decks));
             renderDeckList();
@@ -601,8 +583,39 @@
         }
 
         /**
-         * GAME LOGIC
+         * GAME FLOW & UI
          */
+        function showScreen(id) {
+            document.querySelectorAll('.menu-card, #game-ui').forEach(s => s.style.display = 'none');
+            const el = document.getElementById(id);
+            if(el) el.style.display = (id === 'game-ui') ? 'flex' : 'block';
+        }
+
+        function saveProfile() {
+            const val = document.getElementById('nickname-input').value.trim();
+            if(!val) return;
+            userName = val;
+            localStorage.setItem('flashName', userName);
+            document.getElementById('user-display').innerText = userName;
+            showScreen('screen-mode');
+        }
+
+        function logout() {
+            localStorage.removeItem('flashName');
+            location.reload();
+        }
+
+        function toggleSettings() {
+            const p = document.getElementById('settings-popover');
+            p.style.display = p.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function updateSettings() {
+            settings.sfx = document.getElementById('setting-sfx').checked;
+            settings.autofail = document.getElementById('setting-autofail').checked;
+            localStorage.setItem('flashSettings', JSON.stringify(settings));
+        }
+
         function setMode(m) {
             gameMode = m;
             showScreen('screen-size');
@@ -610,44 +623,31 @@
 
         function startGame(limit) {
             isReviewMode = false;
-            currentStreak = 0;
-            bestStreak = 0;
-            score = 0;
-            currentIndex = 0;
-            missedCards = [];
+            currentStreak = 0; bestStreak = 0; score = 0; currentIndex = 0; missedCards = [];
             
             document.getElementById('score-label').innerText = "Current Score";
             document.getElementById('log-list').innerHTML = "";
             document.getElementById('score-text').innerText = "0";
             document.getElementById('streak-chip').style.display = 'none';
+            document.getElementById('timer-container').style.display = (gameMode === 'Speed') ? 'block' : 'none';
             
-            showScreen('game-ui');
-            
-            const timerContainer = document.getElementById('timer-container');
-            timerContainer.style.display = (gameMode === 'Speed') ? 'block' : 'none';
+            // Load correct deck source
+            let source = rawDeck;
+            if(activeDeckId.startsWith('custom-')) {
+                const idx = parseInt(activeDeckId.split('-')[1]);
+                const customDecks = getCustomDecks();
+                if(customDecks[idx]) source = customDecks[idx].cards;
+            }
 
-            // Choose deck source
-            const source = activeDeck ? activeDeck.cards : rawDeck;
+            if(!source || source.length === 0) {
+                alert("This deck is empty!");
+                showScreen('screen-mode');
+                return;
+            }
+
             currentDeck = [...source].sort(() => Math.random() - 0.5).slice(0, limit);
-            
+            showScreen('game-ui');
             updateUI();
-        }
-
-        function startTimer() {
-            clearInterval(timerInterval);
-            if (gameMode !== 'Speed') return;
-            let timeLeft = 100;
-            const bar = document.getElementById('timer-bar');
-            timerInterval = setInterval(() => {
-                timeLeft -= 1;
-                bar.style.width = timeLeft + "%";
-                bar.style.backgroundColor = timeLeft > 60 ? 'var(--success)' : timeLeft > 30 ? 'var(--warning)' : 'var(--danger)';
-                
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    if (settings.autofail) handleAnswer(false);
-                }
-            }, 100);
         }
 
         function updateUI() {
@@ -660,8 +660,10 @@
             document.getElementById('progress-bar-fill').style.width = progress + "%";
             
             const q = document.getElementById('q-text'), a = document.getElementById('a-text');
+            const card = document.getElementById('card');
+            
             q.style.opacity = "0"; a.style.opacity = "0";
-            document.getElementById('card').classList.remove('flipped', 'shake', 'pop');
+            card.classList.remove('flipped', 'shake', 'pop');
             
             setTimeout(() => {
                 q.innerText = currentDeck[currentIndex].q;
@@ -673,6 +675,22 @@
             }, 300);
         }
 
+        function startTimer() {
+            clearInterval(timerInterval);
+            if (gameMode !== 'Speed') return;
+            let timeLeft = 100;
+            const bar = document.getElementById('timer-bar');
+            timerInterval = setInterval(() => {
+                timeLeft -= 1;
+                bar.style.width = timeLeft + "%";
+                bar.style.backgroundColor = timeLeft > 60 ? 'var(--success)' : timeLeft > 30 ? 'var(--warning)' : 'var(--danger)';
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    if (settings.autofail) handleAnswer(false);
+                }
+            }, 100);
+        }
+
         function toggleFlip() {
             document.getElementById('card').classList.toggle('flipped');
         }
@@ -682,20 +700,18 @@
             lock = true;
             clearInterval(timerInterval);
             
-            const currentQ = currentDeck[currentIndex];
-            const cardEl = document.getElementById('card');
-            
-            // Logging
+            const card = currentDeck[currentIndex];
             const logItem = document.createElement('li');
             logItem.className = 'log-item' + (isRight ? ' can-open' : '');
             logItem.innerHTML = `
                 <div class="log-header" ${isRight ? 'onclick="toggleAnswer(this)"' : ''}>
-                    <span>${currentQ.q}</span>
+                    <span>${card.q}</span>
                     <span class="status-icon ${isRight?'right':'wrong'}">${isRight?'✔':'✖'}</span>
                 </div>
-                <div class="log-answer">Answer: ${currentQ.a}</div>`;
+                <div class="log-answer">Answer: ${card.a}</div>`;
             document.getElementById('log-list').prepend(logItem);
 
+            const cardEl = document.getElementById('card');
             if (isRight) {
                 playSfx('correct');
                 score++;
@@ -704,42 +720,29 @@
                 
                 cardEl.classList.add('pop');
                 document.getElementById('score-text').innerText = score;
-                
-                // Streak Chip
                 const chip = document.getElementById('streak-chip');
                 chip.innerText = `STREAK: ${currentStreak}`;
                 chip.style.display = 'block';
 
-                // Combo Overlay
-                if([3, 5, 10, 15, 20].includes(currentStreak)) {
-                    triggerComboPopup();
-                }
+                if([3, 5, 10, 25, 50].includes(currentStreak)) triggerCombo();
 
-                setTimeout(() => {
-                    currentIndex++;
-                    updateUI();
-                }, 500);
+                setTimeout(() => { currentIndex++; updateUI(); }, 500);
             } else {
                 playSfx('wrong');
                 currentStreak = 0;
                 document.getElementById('streak-chip').style.display = 'none';
-                missedCards.push(currentQ);
-                
+                missedCards.push(card);
                 cardEl.classList.add('flipped', 'shake');
-                
-                setTimeout(() => {
-                    currentIndex++;
-                    updateUI();
-                }, 2000);
+                setTimeout(() => { currentIndex++; updateUI(); }, 2000);
             }
         }
 
-        function triggerComboPopup() {
-            const popup = document.getElementById('combo-popup');
-            popup.innerText = currentStreak >= 10 ? "ON FIRE! 🔥" : "COMBO! ⚡";
-            popup.style.display = "block";
-            popup.style.animation = "slideUp 0.5s ease-out forwards";
-            setTimeout(() => { popup.style.display = "none"; }, 800);
+        function triggerCombo() {
+            const p = document.getElementById('combo-popup');
+            p.innerText = currentStreak >= 10 ? "ON FIRE! 🔥" : "COMBO! ⚡";
+            p.style.display = "block";
+            p.style.animation = "slideUp 0.5s ease-out forwards";
+            setTimeout(() => { p.style.display = "none"; }, 800);
         }
 
         function showGameOver() {
@@ -747,21 +750,21 @@
             document.getElementById('progress-bar-fill').style.width = "100%";
             showScreen('screen-over');
             
-            const statsEl = document.getElementById('extra-stats');
-            const accuracy = Math.round((score / currentDeck.length) * 100);
+            const statsArea = document.getElementById('extra-stats');
+            const accuracy = currentDeck.length > 0 ? Math.round((score / currentDeck.length) * 100) : 0;
 
             if (isReviewMode) {
                 document.getElementById('over-title').innerText = "Practice Done!";
-                document.getElementById('final-stats').innerText = "You reviewed your mistakes.";
+                document.getElementById('final-stats').innerText = "Mistakes cleared.";
                 document.getElementById('retry-missed-btn').style.display = 'none';
-                statsEl.innerHTML = `• Session focused on growth and learning.`;
+                statsArea.innerHTML = `• Practice session completed. No leaderboard impact.`;
             } else {
                 saveScore(score, currentDeck.length, gameMode);
                 document.getElementById('over-title').innerText = "Session Ended";
                 document.getElementById('final-stats').innerText = `Result: ${score} / ${currentDeck.length}`;
                 document.getElementById('retry-missed-btn').style.display = missedCards.length > 0 ? 'block' : 'none';
                 
-                statsEl.innerHTML = `
+                statsArea.innerHTML = `
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                         <div><b>Accuracy:</b> ${accuracy}%</div>
                         <div><b>Missed:</b> ${missedCards.length}</div>
@@ -773,12 +776,11 @@
         }
 
         function replayMissed() {
+            if(missedCards.length === 0) return;
             isReviewMode = true;
             currentDeck = [...missedCards];
             missedCards = [];
-            currentIndex = 0;
-            score = 0;
-            currentStreak = 0;
+            currentIndex = 0; score = 0; currentStreak = 0;
             document.getElementById('score-label').innerText = "Practice Mode";
             document.getElementById('log-list').innerHTML = "";
             document.getElementById('score-text').innerText = "0";
@@ -788,29 +790,34 @@
         }
 
         /**
-         * LEADERBOARD & PERSISTENCE
+         * LEADERBOARD UI
          */
         function toggleAnswer(el) {
             const p = el.parentElement;
-            const isOpen = p.classList.contains('open');
+            const open = p.classList.contains('open');
             document.querySelectorAll('.log-item').forEach(i => i.classList.remove('open'));
-            if (!isOpen) p.classList.add('open');
+            if (!open) p.classList.add('open');
         }
 
         function resetLeaderboard() {
-            if(confirm("Delete all high scores permanently?")) {
+            if(confirm("Wipe all local records?")) {
                 localStorage.removeItem('flashScores');
                 updateLeaderboard();
             }
         }
 
         function updateLeaderboard() {
-            const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
+            let scores = [];
+            try {
+                const stored = localStorage.getItem('flashScores');
+                scores = stored ? JSON.parse(stored) : [];
+            } catch(e) { scores = []; }
+
             const content = document.getElementById('lb-content');
             content.innerHTML = scores.length ? '' : '<div style="font-size:0.7rem; opacity:0.4;">No records yet.</div>';
             
-            scores.sort((a,b) => (b.score/b.total) - (a.score/a.total)).slice(0, 5).forEach((s, i) => {
-                const perc = (s.score/s.total)*100;
+            scores.sort((a,b) => (b.score/b.total) - (a.score/a.total)).slice(0, 5).forEach(s => {
+                const perc = s.total > 0 ? (s.score/s.total)*100 : 0;
                 content.innerHTML += `
                     <div class="lb-entry">
                         <div class="lb-bar" style="width: ${perc}%"></div>
@@ -822,7 +829,12 @@
         }
 
         function saveScore(s, t, m) {
-            const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
+            let scores = [];
+            try {
+                const stored = localStorage.getItem('flashScores');
+                scores = stored ? JSON.parse(stored) : [];
+            } catch(e) { scores = []; }
+
             scores.push({name: userName, score: s, total: t, mode: m});
             localStorage.setItem('flashScores', JSON.stringify(scores));
             updateLeaderboard();
