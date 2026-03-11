@@ -3,220 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcard Pro – Studio Edition (Titan)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <title>Flashcard Pro - Studio Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #6366f1;
-            --primary-dark: #4338ca;
             --primary-glow: rgba(99, 102, 241, 0.5);
             --success: #22c55e;
             --danger: #ef4444;
             --warning: #fbbf24;
-            --accent: #ec4899;
-            --bg-dark: #0f172a;
-            --bg-light: #1e1b4b;
-            --glass: rgba(255, 255, 255, 0.04);
+            --bg: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass: rgba(255, 255, 255, 0.05);
             --glass-border: rgba(255, 255, 255, 0.1);
-            --panel-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* --- GLOBAL & SCROLLBAR --- */
-        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        * { box-sizing: border-box; outline-color: var(--primary); }
 
-        body { 
-            font-family: 'Inter', sans-serif; 
-            margin: 0; 
-            display: flex; 
-            height: 100vh; 
-            background: radial-gradient(circle at top right, var(--bg-light), var(--bg-dark)); 
-            color: white; 
-            overflow: hidden; 
-            user-select: none;
-        }
-
-        /* --- BACKGROUND PARTICLES --- */
-        #particle-canvas {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
-            pointer-events: none;
-            opacity: 0.4;
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background: var(--bg);
+            color: white;
+            overflow: hidden;
         }
 
         /* --- SIDEBAR --- */
-        #sidebar { 
-            width: 360px; 
-            min-width: 360px; 
-            background: rgba(0, 0, 0, 0.45); 
-            backdrop-filter: blur(40px); 
-            border-right: 1px solid var(--glass-border); 
-            padding: 28px; 
-            display: flex; 
-            flex-direction: column; 
-            z-index: 10; 
-            transition: var(--transition-smooth);
+        #sidebar {
+            width: 340px;
+            min-width: 340px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
         }
-        
-        .user-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .user-badge { display: flex; align-items: center; gap: 10px; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 10px var(--success); animation: pulse 2s infinite; }
-        
-        .logout-btn { 
-            background: var(--glass); 
-            border: 1px solid var(--glass-border); 
-            color: white; padding: 6px 14px; 
-            border-radius: 10px; cursor: pointer; 
-            font-size: 0.7rem; font-weight: 700; transition: 0.2s; 
+
+        .user-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
-        .logout-btn:hover { background: var(--danger); border-color: var(--danger); transform: scale(1.05); }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .logout-btn:hover { background: var(--danger); transform: scale(1.05); }
+
+        @keyframes pulseHint { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+        .hint-text {
+            font-size: 0.75rem;
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--warning);
+            animation: pulseHint 2s infinite;
+        }
 
         .score-box {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            padding: 24px; border-radius: 24px; text-align: center; margin-bottom: 15px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.3), inset 0 0 20px rgba(255,255,255,0.1);
-            position: relative; overflow: hidden;
-        }
-        .score-box::after {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            transform: rotate(45deg); animation: shine 6s infinite;
+            background: var(--primary);
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px var(--primary-glow);
+            position: relative;
         }
 
-        #log-list { flex-grow: 1; overflow-y: auto; list-style: none; padding: 0; margin: 15px 0; }
-        .log-item { 
-            margin-bottom: 12px; border-radius: 16px; background: var(--glass); 
-            border: 1px solid var(--glass-border); transition: var(--transition-smooth);
-            animation: slideIn 0.3s ease-out;
+        #streak-chip {
+            position: absolute;
+            top: -10px;
+            right: -5px;
+            background: var(--warning);
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 900;
+            display: none;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+
+        #log-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            list-style: none;
+            padding: 0;
+            scrollbar-width: thin;
+        }
+
+        .log-item {
+            margin-bottom: 8px;
+            border-radius: 12px;
+            background: var(--glass);
+            overflow: hidden;
+            border: 2px solid transparent;
+            transition: 0.2s ease;
+        }
+
         .log-item.can-open { cursor: pointer; }
-        .log-item.can-open:hover { transform: translateX(5px); background: rgba(255,255,255,0.08); }
-        .log-item.open { border-color: var(--primary); background: rgba(99, 102, 241, 0.1); box-shadow: 0 0 20px var(--primary-glow); }
-        
-        .log-header { padding: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
-        .log-answer { max-height: 0; padding: 0 16px; font-size: 0.8rem; background: rgba(0,0,0,0.2); transition: 0.4s; overflow: hidden; color: #a5b4fc; }
-        .log-item.open .log-answer { max-height: 120px; padding: 16px; border-top: 1px solid var(--glass-border); }
+        .log-item.can-open:hover { background: rgba(255,255,255,0.1); }
+        .log-item.open { border-color: var(--primary); background: rgba(99, 102, 241, 0.15); }
+
+        .log-header { padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+        .status-icon.right { color: var(--success); }
+        .status-icon.wrong { color: var(--danger); font-weight: bold; }
+
+        .log-answer {
+            max-height: 0;
+            padding: 0 12px;
+            font-size: 0.8rem;
+            background: rgba(0,0,0,0.2);
+            transition: 0.3s;
+            overflow: hidden;
+        }
+        .log-item.open .log-answer { max-height: 100px; padding: 12px; border-top: 1px solid var(--glass-border); }
 
         /* --- LEADERBOARD --- */
-        #leaderboard { padding: 20px; background: rgba(0,0,0,0.2); border-radius: 24px; border: 1px solid var(--glass-border); }
-        .lb-entry { position: relative; padding: 12px; margin-bottom: 8px; border-radius: 12px; background: rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; overflow: hidden; }
-        .lb-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.2; z-index: 0; transition: width 1.5s cubic-bezier(0.19, 1, 0.22, 1); }
+        #leaderboard {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .lb-entry {
+            position: relative;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            overflow: hidden;
+        }
+
+        .lb-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.2; z-index: 0; }
+        .reset-lb { background: none; border: none; color: #ff4444; font-size: 0.6rem; cursor: pointer; opacity: 0.5; width: 100%; text-align: center; margin-top: 5px; }
 
         /* --- MAIN AREA --- */
-        #game-container { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 40px; z-index: 5; }
-        
+        #game-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 20px;
+        }
+
         .bar-wrapper { position: absolute; top: 0; left: 0; width: 100%; z-index: 100; }
-        .progress-bar-bg { width: 100%; height: 10px; background: rgba(0,0,0,0.3); }
-        #progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--success), #4ade80); transition: width 0.5s ease; box-shadow: 0 0 15px var(--success); }
-        #timer-container { width: 100%; height: 4px; background: rgba(255,255,255,0.05); display: none; }
+        .progress-bar-bg { width: 100%; height: 8px; background: rgba(0,0,0,0.3); }
+        #progress-bar-fill { width: 0%; height: 100%; background: var(--success); transition: width 0.4s ease; box-shadow: 0 0 10px var(--success); }
+        #timer-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); display: none; }
         #timer-bar { width: 100%; height: 100%; background: var(--success); transition: width 0.1s linear; }
 
         /* --- MENUS --- */
-        .menu-card { 
-            text-align: center; background: white; color: #1e293b; padding: 50px; 
-            border-radius: 40px; box-shadow: var(--panel-shadow); width: 480px; 
-            display: none; animation: scaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            max-height: 85vh; overflow-y: auto;
+        .menu-card {
+            text-align: center;
+            background: white;
+            color: #333;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            width: 420px;
+            display: none;
+            animation: slideUp 0.4s ease-out;
         }
 
-        .btn-mode { 
-            background: var(--primary); color: white; border: none; padding: 18px; border-radius: 18px; 
-            margin: 10px 0; width: 100%; cursor: pointer; font-weight: 800; font-size: 1.1rem; 
-            transition: all 0.3s; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .btn-mode {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 8px 0;
+            width: 100%;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: 0.2s;
         }
-        .btn-mode:hover { transform: translateY(-4px); filter: brightness(1.1); box-shadow: 0 15px 30px rgba(99, 102, 241, 0.3); }
-        .btn-mode:active { transform: translateY(-1px); }
+        .btn-mode:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .btn-back { background: none; border: none; color: #888; cursor: pointer; font-size: 0.8rem; margin-top: 10px; text-decoration: underline; }
 
-        /* --- ARCHITECT (Unique Feature) --- */
-        .architect-zone { text-align: left; margin-top: 20px; }
-        .node-input-group { background: #f1f5f9; padding: 15px; border-radius: 15px; margin-bottom: 10px; position: relative; border-left: 4px solid var(--accent); }
-        .node-input-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; margin-top: 5px; font-family: inherit; }
-        .remove-node { position: absolute; top: 5px; right: 10px; cursor: pointer; color: var(--danger); font-weight: 900; }
-
-        .deck-list-item { 
-            display: flex; justify-content: space-between; align-items: center; padding: 15px; 
-            background: #f8fafc; border-radius: 15px; margin-bottom: 10px; border: 2px solid transparent;
-            cursor: pointer; transition: 0.2s;
+        /* --- CARD --- */
+        .card { width: 420px; height: 300px; perspective: 1000px; cursor: pointer; margin-bottom: 25px; position: relative; }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-style: preserve-3d;
         }
-        .deck-list-item:hover { border-color: var(--primary); }
-        .deck-list-item.active { border-color: var(--accent); background: #fff1f2; }
-
-        /* --- FLASHCARD --- */
-        .card { width: 520px; height: 340px; perspective: 2000px; cursor: pointer; margin-bottom: 40px; position: relative; }
-        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
         .card.flipped .card-inner { transform: rotateY(180deg); }
-        .front, .back { 
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; 
-            display: flex; align-items: center; justify-content: center; padding: 45px; 
-            border-radius: 40px; font-size: 1.8rem; font-weight: 800; line-height: 1.3;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        .front, .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            border-radius: 28px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            box-sizing: border-box;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
         }
         .front { background: white; color: #1e293b; border: 1px solid #e2e8f0; }
         .back { background: var(--primary); color: white; transform: rotateY(180deg); }
 
-        .btn-group { display: flex; gap: 20px; }
-        .btn-answer { padding: 22px 45px; border: none; border-radius: 22px; font-weight: 900; cursor: pointer; transition: 0.3s; font-size: 1.1rem; flex: 1; }
-        .btn-miss { background: var(--danger); color: white; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3); }
-        .btn-gotit { background: var(--success); color: white; box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3); }
-        .btn-answer:hover { transform: scale(1.05); filter: brightness(1.1); }
+        /* --- COMBO FEEDBACK --- */
+        .combo-msg {
+            position: absolute;
+            top: -40px;
+            font-weight: 900;
+            color: var(--warning);
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* --- BUTTONS --- */
+        .btn-group button { padding: 18px 35px; border: none; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; margin: 0 10px; }
+        .btn-wrong { background: var(--danger); color: white; }
+        .btn-right { background: var(--success); color: white; }
+        .btn-wrong:hover, .btn-right:hover { transform: scale(1.05); }
+
+        input#nickname-input, .deck-input { padding: 12px; width: 80%; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 20px; font-size: 1rem; text-align: center; }
+
+        /* --- DECK BUILDER --- */
+        #deck-list-container { max-height: 200px; overflow-y: auto; margin: 10px 0; border: 1px solid #eee; border-radius: 10px; padding: 5px; }
+        .deck-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem; align-items: center; }
+        .deck-actions { display: flex; gap: 5px; }
+        .small-btn { padding: 4px 8px; font-size: 0.7rem; border-radius: 5px; border: none; cursor: pointer; }
+
+        /* --- SETTINGS POP OVER --- */
+        #settings-btn { position: absolute; bottom: 20px; right: 20px; background: var(--glass); border: 1px solid var(--glass-border); color: white; padding: 10px; border-radius: 50%; cursor: pointer; transition: 0.3s; }
+        #settings-btn:hover { transform: rotate(90deg); background: var(--primary); }
+        #settings-popover {
+            position: absolute; bottom: 70px; right: 20px; background: white; color: #333; padding: 20px; border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: none; width: 200px; z-index: 1000;
+        }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.8rem; font-weight: bold; }
 
         /* --- ANIMATIONS --- */
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        @keyframes shine { from { left: -150%; } to { left: 150%; } }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes scaleUp { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-        
-        .combo-popup { 
-            position: absolute; color: var(--warning); font-weight: 900; font-size: 2.5rem; 
-            pointer-events: none; z-index: 1000; animation: floatUp 0.8s ease-out forwards;
-            text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
-        }
-        @keyframes floatUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-100px); } }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        @keyframes successPop { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .shake { animation: shake 0.2s ease-in-out 0s 2; }
+        .pop { animation: successPop 0.3s ease-out; }
 
-        .shake { animation: shakeAnim 0.4s ease-in-out; }
-        @keyframes shakeAnim {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
     </style>
 </head>
 <body>
 
-    <canvas id="particle-canvas"></canvas>
-
     <aside id="sidebar">
         <div class="user-row">
-            <div class="user-badge">
-                <div class="status-dot"></div>
-                <span id="user-display" style="font-weight: 900; letter-spacing: -0.5px;">GUEST_STUDIO</span>
-            </div>
-            <button class="logout-btn" onclick="logout()">LOGOUT ⏻</button>
+            <span id="user-display" style="font-weight: 900; color: var(--warning); font-size: 1.1rem;">Guest</span>
+            <button class="logout-btn" onclick="logout()" aria-label="Logout">Logout ⏻</button>
         </div>
-                
-        <div class="hint-text">ACTIVE_SESSION: ANALYZING_RECALL</div>
-
+        <div class="hint-text">Click ✔ items to review</div>
+        
         <div class="score-box">
-            <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; opacity: 0.8;">Recollection Accuracy</div>
-            <span id="score-text" style="font-size: 3rem; font-weight:900;">0</span>
-            <div id="streak-indicator" style="font-size: 0.8rem; margin-top: 5px; font-weight: 700; background: rgba(0,0,0,0.2); padding: 4px 12px; border-radius: 20px; display: inline-block;">
-                Streak: 0 | Best: 0
-            </div>
+            <div id="streak-chip">STREAK: 0</div>
+            <div id="score-label" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Current Score</div>
+            <span id="score-text" style="font-size: 2rem; font-weight:900;">0</span>
         </div>
 
         <ul id="log-list"></ul>
 
         <div id="leaderboard">
-            <div style="font-weight: 900; font-size: 0.9rem; margin-bottom: 15px; color: var(--primary);">STUDIO_RECORDS.DAT</div>
+            <div style="font-weight: 800; font-size: 0.9rem; margin-bottom: 10px; display: flex; align-items: center; gap: 5px;">🏆 Leaderboard</div>
             <div id="lb-content"></div>
-            <button class="reset-lb" onclick="resetLeaderboard()">Clear Neural Records</button>
+            <button class="reset-lb" onclick="resetLeaderboard()" aria-label="Reset Leaderboard">Reset Records</button>
         </div>
     </aside>
 
@@ -227,278 +310,371 @@
         </div>
 
         <div id="screen-profile" class="menu-card">
-            <h1 style="font-size: 2.5rem;">Initialize</h1>
-            <p>Enter your unique operator handle to begin synchronization.</p>
-            <input type="text" id="nickname-input" placeholder="Operator Name..." maxlength="12" style="width: 100%; padding: 18px; border-radius: 15px; border: 2px solid #e2e8f0; font-size: 1.2rem; text-align: center; margin-bottom: 25px;">
-            <button class="btn-mode" onclick="saveProfile()">SYNC DATA</button>
+            <h1>New Player</h1>
+            <p>Enter your studio nickname:</p>
+            <input type="text" id="nickname-input" placeholder="Nickname..." maxlength="12">
+            <button class="btn-mode" onclick="saveProfile()">Enter Studio</button>
         </div>
 
         <div id="screen-mode" class="menu-card">
-            <h1>Studio Hub</h1>
-            <p>Select memory deck and processing mode.</p>
-            
-            <div id="deck-hub" style="margin-bottom: 25px; text-align: left;">
-                <label style="font-size: 0.7rem; font-weight: 900; color: #94a3b8; text-transform: uppercase;">Primary Decks</label>
-                <div id="deck-list" style="margin-top: 10px;"></div>
-            </div>
-
-            <button class="btn-mode" onclick="setMode('Normal')">Normal Mode</button>
-            <button class="btn-mode" style="background: var(--warning); color: #000;" onclick="setMode('Speed')">⚡ Speed Blitz</button>
-            <hr style="opacity: 0.1; margin: 25px 0;">
-            <button class="btn-mode" style="background: var(--accent);" onclick="showArchitect()">Neural Architect</button>
+            <h1>Game Mode</h1>
+            <button class="btn-mode" onclick="setMode('Normal')" aria-label="Normal Mode">Normal Mode</button>
+            <button class="btn-mode" style="background: var(--warning); color: #000;" onclick="setMode('Speed')" aria-label="Speed Blitz Mode">⚡ Speed Blitz</button>
+            <hr style="margin: 15px 0; opacity: 0.1;">
+            <button class="btn-mode" style="background: #444;" onclick="showScreen('screen-decks')">🗂 Manage Decks</button>
         </div>
 
-        <div id="screen-architect" class="menu-card">
-            <h1>Neural Architect</h1>
-            <p>Forge custom knowledge nodes for your session.</p>
-            <input type="text" id="deck-name-input" placeholder="Deck Identifier..." style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; margin-bottom:15px;">
-            <div id="architect-container" class="architect-zone"></div>
-            <button class="btn-mode" onclick="addArchitectNode()">+ Add Data Node</button>
-            <button class="btn-mode" style="background:var(--success)" onclick="saveCustomDeck()">Finalize Deck</button>
-            <button class="btn-back" onclick="showScreen('screen-mode')" style="width:100%; border:none; background:none; cursor:pointer; color:#888; font-weight:700; margin-top:10px;">Discard</button>
+        <div id="screen-decks" class="menu-card">
+            <h2>Your Decks</h2>
+            <div id="deck-list-container"></div>
+            <button class="btn-mode" style="background: var(--success);" onclick="showDeckEditor()">+ Create New Deck</button>
+            <button class="btn-back" onclick="showScreen('screen-mode')">Back to Modes</button>
+        </div>
+
+        <div id="screen-deck-editor" class="menu-card" style="width: 500px;">
+            <h2 id="editor-title">Create Deck</h2>
+            <input type="text" id="deck-name-input" placeholder="Deck Name" class="deck-input">
+            <div id="cards-editor-area" style="max-height: 250px; overflow-y: auto; margin-bottom: 10px;">
+                </div>
+            <button class="small-btn" style="background: #eee; width: 100%; margin-bottom: 10px;" onclick="addEditorRow()">+ Add Card</button>
+            <button class="btn-mode" onclick="saveCustomDeck()">Save Deck</button>
+            <button class="btn-back" onclick="showScreen('screen-decks')">Cancel</button>
         </div>
 
         <div id="screen-size" class="menu-card">
-            <h1>Session Load</h1>
-            <p>Quantify the card stream depth.</p>
-            <button class="btn-mode" onclick="startGame(10)">Sprint (10 Nodes)</button>
-            <button class="btn-mode" onclick="startGame(50)">Marathon (50 Nodes)</button>
-            <button class="btn-back" onclick="showScreen('screen-mode')" style="width:100%; border:none; background:none; cursor:pointer; color:#888; font-weight:700;">Back to Hub</button>
+            <h1 id="size-title">Session Size</h1>
+            <button class="btn-mode" onclick="startGame(10)">Sprint (10)</button>
+            <button class="btn-mode" onclick="startGame(50)">Marathon (50)</button>
+            <button class="btn-back" onclick="showScreen('screen-mode')">← Change Mode</button>
         </div>
 
         <div id="game-ui" style="display: none; flex-direction: column; align-items: center;">
-            <div id="counter" style="margin-bottom: 20px; font-weight: 900; background: rgba(255,255,255,0.1); padding: 8px 20px; border-radius: 50px; font-size: 0.9rem; font-family: 'JetBrains Mono';">NODE_INDEX: 1</div>
-            <div class="card" id="card" onclick="this.classList.toggle('flipped')">
+            <div id="counter" style="margin-bottom: 15px; font-weight: 800; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 1px;">CARD 1</div>
+            
+            <div class="card" id="card" onclick="toggleFlip()">
+                <div id="combo-popup" class="combo-msg" style="display:none;">COMBO!</div>
                 <div class="card-inner">
                     <div class="front" id="q-text"></div>
                     <div class="back" id="a-text"></div>
                 </div>
             </div>
+
             <div class="btn-group">
-                <button class="btn-answer btn-miss" onclick="handleAnswer(false)">❌ MISS</button>
-                <button class="btn-answer btn-gotit" onclick="handleAnswer(true)">✅ RECALL</button>
+                <button class="btn-wrong" onclick="handleAnswer(false)" aria-label="Missed it">❌ Miss</button>
+                <button class="btn-right" onclick="handleAnswer(true)" aria-label="Got it right">✅ Got It</button>
             </div>
         </div>
 
         <div id="screen-over" class="menu-card">
-            <h1 id="over-title">Sync Complete</h1>
-            <div id="final-stats-container">
-                <p id="final-stats" style="font-size: 2rem; font-weight: 900; color: var(--primary); margin: 10px 0;"></p>
-                <div id="stats-breakdown" style="text-align: left; background: #f8fafc; padding: 20px; border-radius: 20px; font-size: 0.9rem; margin-bottom: 20px;"></div>
+            <h1 id="over-title" style="margin-bottom: 5px;">Finished!</h1>
+            <p id="final-stats" style="font-size: 1.4rem; font-weight: 900; color: var(--primary); margin-bottom: 10px;"></p>
+            
+            <div id="extra-stats" style="text-align: left; background: #f8fafc; padding: 15px; border-radius: 15px; margin-bottom: 20px; font-size: 0.85rem; border: 1px solid #e2e8f0;">
+                </div>
+
+            <button id="retry-missed-btn" class="btn-mode" style="background: var(--danger);" onclick="replayMissed()">Review Mistakes</button>
+            <button class="btn-mode" onclick="showScreen('screen-mode')">Main Menu</button>
+        </div>
+
+        <button id="settings-btn" onclick="toggleSettings()" title="Settings">⚙</button>
+        <div id="settings-popover">
+            <div class="setting-row">
+                <span>Sound Effects</span>
+                <input type="checkbox" id="setting-sfx" checked onchange="updateSettings()">
             </div>
-            <button id="retry-missed-btn" class="btn-mode" style="background: var(--danger);" onclick="replayMissed()">Analyze Errors</button>
-            <button class="btn-mode" onclick="showScreen('screen-mode')">Return to Hub</button>
+            <div class="setting-row">
+                <span>Speed Auto-Fail</span>
+                <input type="checkbox" id="setting-autofail" checked onchange="updateSettings()">
+            </div>
         </div>
     </main>
 
     <script>
         /**
-         * CORE STATE
+         * GLOBAL STATE & CONSTANTS
          */
-        let audioCtx, currentDeck = [], missedCards = [], gameMode = 'Normal', 
-            currentIndex = 0, score = 0, lock = false, timerInterval, 
-            isReviewMode = false, userName = "", currentStreak = 0, bestStreak = 0;
+        let audioCtx, currentDeck = [], missedCards = [], gameMode = 'Normal', currentIndex = 0, score = 0, lock = false, timerInterval, isReviewMode = false, userName = "";
+        let activeDeck = null; // null means default rawDeck
+        
+        // Streak Logic
+        let currentStreak = 0;
+        let bestStreak = 0;
+
+        // Settings
+        let settings = { sfx: true, autofail: true };
 
         const rawDeck = [
-            { q: "What is the capital of Japan?", a: "Tokyo" },
-            { q: "How many continents are there?", a: "7" },
-            { q: "What is the square root of 144?", a: "12" },
-            { q: "Which planet is closest to the sun?", a: "Mercury" },
-            { q: "Who wrote 'Romeo and Juliet'?", a: "William Shakespeare" },
-            { q: "What is the chemical symbol for Gold?", a: "Au" },
-            { q: "What does CPU stand for?", a: "Central Processing Unit" },
-            { q: "Which ocean is the largest?", a: "Pacific Ocean" },
-            { q: "What is the fastest land animal?", a: "Cheetah" },
-            { q: "How many colors are in a rainbow?", a: "7" },
-            { q: "What is the powerhouse of the cell?", a: "Mitochondria" },
-            { q: "In what year did the Titanic sink?", a: "1912" },
-            { q: "What is the hardest natural substance?", a: "Diamond" },
-            { q: "Which gas do plants breathe in?", a: "Carbon Dioxide" },
-            { q: "What is the capital of Italy?", a: "Rome" }
+            { q: "What is the capital of Japan?", a: "Tokyo" }, { q: "How many continents are there?", a: "7" },
+            { q: "What is the square root of 144?", a: "12" }, { q: "Which planet is closest to the sun?", a: "Mercury" },
+            { q: "Who wrote 'Romeo and Juliet'?", a: "William Shakespeare" }, { q: "What is the chemical symbol for Gold?", a: "Au" },
+            { q: "What does CPU stand for?", a: "Central Processing Unit" }, { q: "Which ocean is the largest?", a: "Pacific Ocean" },
+            { q: "What is the fastest land animal?", a: "Cheetah" }, { q: "How many colors are in a rainbow?", a: "7" },
+            { q: "What is the powerhouse of the cell?", a: "Mitochondria" }, { q: "In what year did the Titanic sink?", a: "1912" },
+            { q: "What is the hardest natural substance?", a: "Diamond" }, { q: "Which gas do plants breathe in?", a: "Carbon Dioxide" },
+            { q: "What is the capital of Italy?", a: "Rome" }, { q: "Who invented the lightbulb?", a: "Thomas Edison" },
+            { q: "What is the largest organ in the human body?", a: "Skin" }, { q: "How many bones are in the adult human body?", a: "206" },
+            { q: "What is the main ingredient in hummus?", a: "Chickpeas" }, { q: "Which country gifted the Statue of Liberty to the USA?", a: "France" }
         ];
-
-        let activeDeck = [...rawDeck];
-        let customDecks = JSON.parse(localStorage.getItem('flashDecks') || '{}');
 
         /**
          * INITIALIZATION
          */
         window.onload = () => {
             const savedName = localStorage.getItem('flashName');
+            const savedSettings = localStorage.getItem('flashSettings');
+            
+            if(savedSettings) {
+                settings = JSON.parse(savedSettings);
+                document.getElementById('setting-sfx').checked = settings.sfx;
+                document.getElementById('setting-autofail').checked = settings.autofail;
+            }
+
             if(savedName) {
                 userName = savedName;
-                document.getElementById('user-display').innerText = userName.toUpperCase();
+                document.getElementById('user-display').innerText = userName;
                 showScreen('screen-mode');
             } else {
                 showScreen('screen-profile');
             }
             updateLeaderboard();
-            renderDeckHub();
-            initParticles();
+            renderDeckList();
         };
 
         /**
-         * AUDIO SYSTEM
+         * AUDIO SYSTEM (Web Audio API)
          */
         function playSfx(t) {
+            if (!settings.sfx) return;
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
             const o = audioCtx.createOscillator(), g = audioCtx.createGain();
             o.connect(g); g.connect(audioCtx.destination);
             g.gain.setValueAtTime(0, audioCtx.currentTime);
+
             if (t === 'correct') {
-                o.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-                o.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime+0.1);
+                o.frequency.setValueAtTime(523, audioCtx.currentTime);
+                o.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime+0.1);
                 g.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime+0.01);
-                g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.25);
+                g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.2);
             } else {
-                o.type='sawtooth'; o.frequency.setValueAtTime(110, audioCtx.currentTime);
-                g.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime+0.01);
+                o.type = 'sawtooth';
+                o.frequency.setValueAtTime(120, audioCtx.currentTime);
+                g.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime+0.01);
                 g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.4);
             }
             o.start(); o.stop(audioCtx.currentTime+0.4);
         }
 
         /**
-         * NAVIGATION & SCREENS
+         * NAVIGATION
          */
         function showScreen(screenId) {
             document.querySelectorAll('.menu-card, #game-ui').forEach(s => s.style.display = 'none');
-            const target = document.getElementById(screenId);
-            if (screenId === 'game-ui') target.style.display = 'flex';
-            else target.style.display = 'block';
-            if (screenId === 'screen-mode') renderDeckHub();
+            const el = document.getElementById(screenId);
+            el.style.display = (screenId === 'game-ui') ? 'flex' : 'block';
         }
 
         function saveProfile() {
             const val = document.getElementById('nickname-input').value.trim();
-            if(!val) return alert("Initialization failed: Handle required.");
+            if(!val) return alert("Enter a name!");
             userName = val;
             localStorage.setItem('flashName', userName);
-            document.getElementById('user-display').innerText = userName.toUpperCase();
+            document.getElementById('user-display').innerText = userName;
             showScreen('screen-mode');
         }
 
         function logout() {
-            localStorage.removeItem('flashName');
-            location.reload();
+            if(confirm("Logout and clear profile?")) {
+                localStorage.removeItem('flashName');
+                location.reload();
+            }
         }
 
         /**
-         * CUSTOM DECK ARCHITECT
+         * SETTINGS & DECK BUILDER LOGIC
          */
-        function showArchitect() {
-            showScreen('screen-architect');
-            document.getElementById('architect-container').innerHTML = "";
-            document.getElementById('deck-name-input').value = "";
-            addArchitectNode();
+        function toggleSettings() {
+            const pop = document.getElementById('settings-popover');
+            pop.style.display = pop.style.display === 'block' ? 'none' : 'block';
         }
 
-        function addArchitectNode() {
+        function updateSettings() {
+            settings.sfx = document.getElementById('setting-sfx').checked;
+            settings.autofail = document.getElementById('setting-autofail').checked;
+            localStorage.setItem('flashSettings', JSON.stringify(settings));
+        }
+
+        function getCustomDecks() {
+            return JSON.parse(localStorage.getItem('flashCustomDecks') || '[]');
+        }
+
+        function renderDeckList() {
+            const container = document.getElementById('deck-list-container');
+            const decks = getCustomDecks();
+            container.innerHTML = `<div class="deck-item"><span>Standard Studio Deck</span><button class="small-btn" style="background:var(--primary); color:white" onclick="selectDeck(null)">Use</button></div>`;
+            
+            decks.forEach((deck, index) => {
+                container.innerHTML += `
+                    <div class="deck-item">
+                        <span style="font-weight:bold">${deck.name} (${deck.cards.length})</span>
+                        <div class="deck-actions">
+                            <button class="small-btn" style="background:var(--primary); color:white" onclick="selectDeck(${index})">Use</button>
+                            <button class="small-btn" style="background:#ddd" onclick="showDeckEditor(${index})">Edit</button>
+                            <button class="small-btn" style="background:var(--danger); color:white" onclick="deleteDeck(${index})">×</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function selectDeck(index) {
+            if (index === null) activeDeck = null;
+            else activeDeck = getCustomDecks()[index];
+            showScreen('screen-mode');
+        }
+
+        function deleteDeck(index) {
+            if(!confirm("Delete this deck?")) return;
+            let decks = getCustomDecks();
+            decks.splice(index, 1);
+            localStorage.setItem('flashCustomDecks', JSON.stringify(decks));
+            renderDeckList();
+        }
+
+        let editingDeckIndex = -1;
+        function showDeckEditor(index = -1) {
+            editingDeckIndex = index;
+            const area = document.getElementById('cards-editor-area');
+            const nameInput = document.getElementById('deck-name-input');
+            area.innerHTML = '';
+            
+            if (index === -1) {
+                document.getElementById('editor-title').innerText = "Create Deck";
+                nameInput.value = "";
+                addEditorRow();
+            } else {
+                const deck = getCustomDecks()[index];
+                document.getElementById('editor-title').innerText = "Edit Deck";
+                nameInput.value = deck.name;
+                deck.cards.forEach(c => addEditorRow(c.q, c.a));
+            }
+            showScreen('screen-deck-editor');
+        }
+
+        function addEditorRow(q = "", a = "") {
             const div = document.createElement('div');
-            div.className = 'node-input-group';
+            div.style.display = "flex";
+            div.style.gap = "5px";
+            div.style.marginBottom = "5px";
             div.innerHTML = `
-                <span class="remove-node" onclick="this.parentElement.remove()">×</span>
-                <input type="text" class="node-q" placeholder="Input Question...">
-                <input type="text" class="node-a" placeholder="Input Answer...">
+                <input type="text" placeholder="Q" class="deck-input q-val" style="margin:0; flex:1" value="${q}">
+                <input type="text" placeholder="A" class="deck-input a-val" style="margin:0; flex:1" value="${a}">
+                <button class="small-btn" style="background:var(--danger); color:white" onclick="this.parentElement.remove()">×</button>
             `;
-            document.getElementById('architect-container').appendChild(div);
+            document.getElementById('cards-editor-area').appendChild(div);
         }
 
         function saveCustomDeck() {
             const name = document.getElementById('deck-name-input').value.trim();
-            if(!name) return alert("Deck identifier required.");
-            const nodes = [];
-            document.querySelectorAll('.node-input-group').forEach(group => {
-                const q = group.querySelector('.node-q').value.trim();
-                const a = group.querySelector('.node-a').value.trim();
-                if(q && a) nodes.push({q, a});
+            if(!name) return alert("Deck needs a name!");
+            
+            const cards = [];
+            const qs = document.querySelectorAll('.q-val');
+            const as = document.querySelectorAll('.a-val');
+            
+            qs.forEach((q, i) => {
+                if(q.value.trim() && as[i].value.trim()) {
+                    cards.push({ q: q.value.trim(), a: as[i].value.trim() });
+                }
             });
-            if(nodes.length === 0) return alert("Neural architecture requires at least one node.");
-            customDecks[name] = nodes;
-            localStorage.setItem('flashDecks', JSON.stringify(customDecks));
-            showScreen('screen-mode');
-        }
 
-        function renderDeckHub() {
-            const container = document.getElementById('deck-list');
-            container.innerHTML = `<div class="deck-list-item active" id="deck-default" onclick="selectDeck('default')">
-                <div><b>Standard Studio Core</b><br><small>15 Primary Nodes</small></div>
-                <span>CORE</span>
-            </div>`;
-            Object.keys(customDecks).forEach(key => {
-                const div = document.createElement('div');
-                div.className = 'deck-list-item';
-                div.innerHTML = `<div><b>${key}</b><br><small>${customDecks[key].length} Nodes</small></div>
-                                 <button onclick="deleteDeck('${key}', event)" style="background:none; border:none; color:red; font-size:0.6rem; cursor:pointer;">DELETE</button>`;
-                div.onclick = () => {
-                    document.querySelectorAll('.deck-list-item').forEach(i => i.classList.remove('active'));
-                    div.classList.add('active');
-                    selectDeck(key);
-                };
-                container.appendChild(div);
-            });
-        }
+            if(cards.length === 0) return alert("Add at least one card!");
 
-        function selectDeck(key) {
-            activeDeck = (key === 'default') ? [...rawDeck] : customDecks[key];
-        }
+            let decks = getCustomDecks();
+            const deckData = { name, cards };
 
-        function deleteDeck(key, e) {
-            e.stopPropagation();
-            delete customDecks[key];
-            localStorage.setItem('flashDecks', JSON.stringify(customDecks));
-            renderDeckHub();
-            activeDeck = [...rawDeck];
+            if(editingDeckIndex === -1) decks.push(deckData);
+            else decks[editingDeckIndex] = deckData;
+
+            localStorage.setItem('flashCustomDecks', JSON.stringify(decks));
+            renderDeckList();
+            showScreen('screen-decks');
         }
 
         /**
-         * GAMEPLAY LOGIC
+         * GAME LOGIC
          */
-        function setMode(m) { gameMode = m; showScreen('screen-size'); }
+        function setMode(m) {
+            gameMode = m;
+            showScreen('screen-size');
+        }
 
         function startGame(limit) {
             isReviewMode = false;
             currentStreak = 0;
             bestStreak = 0;
-            score = 0; 
-            currentIndex = 0; 
+            score = 0;
+            currentIndex = 0;
             missedCards = [];
-            document.getElementById('score-text').innerText = "0";
+            
+            document.getElementById('score-label').innerText = "Current Score";
             document.getElementById('log-list').innerHTML = "";
-            document.getElementById('streak-indicator').innerText = `Streak: 0 | Best: 0`;
+            document.getElementById('score-text').innerText = "0";
+            document.getElementById('streak-chip').style.display = 'none';
             
             showScreen('game-ui');
-            document.getElementById('timer-container').style.display = (gameMode === 'Speed') ? 'block' : 'none';
-            currentDeck = [...activeDeck].sort(() => Math.random() - 0.5).slice(0, limit);
-            updateUI();
-        }
+            
+            const timerContainer = document.getElementById('timer-container');
+            timerContainer.style.display = (gameMode === 'Speed') ? 'block' : 'none';
 
-        function updateUI() {
-            if (currentIndex >= currentDeck.length) { showGameOver(); return; }
-            const prog = (currentIndex / currentDeck.length) * 100;
-            document.getElementById('progress-bar-fill').style.width = prog + "%";
+            // Choose deck source
+            const source = activeDeck ? activeDeck.cards : rawDeck;
+            currentDeck = [...source].sort(() => Math.random() - 0.5).slice(0, limit);
             
-            const card = document.getElementById('card');
-            card.classList.remove('flipped');
-            
-            document.getElementById('q-text').innerText = currentDeck[currentIndex].q;
-            document.getElementById('a-text').innerText = currentDeck[currentIndex].a;
-            document.getElementById('counter').innerText = `NODE_INDEX: ${currentIndex + 1} / ${currentDeck.length}`;
-            
-            lock = false;
-            if(gameMode === 'Speed') startTimer();
+            updateUI();
         }
 
         function startTimer() {
             clearInterval(timerInterval);
+            if (gameMode !== 'Speed') return;
             let timeLeft = 100;
             const bar = document.getElementById('timer-bar');
             timerInterval = setInterval(() => {
-                timeLeft -= 1.5;
+                timeLeft -= 1;
                 bar.style.width = timeLeft + "%";
-                bar.style.background = timeLeft > 50 ? 'var(--success)' : timeLeft > 25 ? 'var(--warning)' : 'var(--danger)';
-                if (timeLeft <= 0) { clearInterval(timerInterval); handleAnswer(false); }
+                bar.style.backgroundColor = timeLeft > 60 ? 'var(--success)' : timeLeft > 30 ? 'var(--warning)' : 'var(--danger)';
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    if (settings.autofail) handleAnswer(false);
+                }
             }, 100);
+        }
+
+        function updateUI() {
+            if (currentIndex >= currentDeck.length) {
+                showGameOver();
+                return;
+            }
+            
+            const progress = (currentIndex / currentDeck.length) * 100;
+            document.getElementById('progress-bar-fill').style.width = progress + "%";
+            
+            const q = document.getElementById('q-text'), a = document.getElementById('a-text');
+            q.style.opacity = "0"; a.style.opacity = "0";
+            document.getElementById('card').classList.remove('flipped', 'shake', 'pop');
+            
+            setTimeout(() => {
+                q.innerText = currentDeck[currentIndex].q;
+                a.innerText = currentDeck[currentIndex].a;
+                document.getElementById('counter').innerText = `CARD ${currentIndex + 1} / ${currentDeck.length}`;
+                q.style.opacity = "1"; a.style.opacity = "1";
+                lock = false;
+                if(gameMode === 'Speed') startTimer();
+            }, 300);
+        }
+
+        function toggleFlip() {
+            document.getElementById('card').classList.toggle('flipped');
         }
 
         function handleAnswer(isRight) {
@@ -506,154 +682,150 @@
             lock = true;
             clearInterval(timerInterval);
             
-            const card = currentDeck[currentIndex];
+            const currentQ = currentDeck[currentIndex];
+            const cardEl = document.getElementById('card');
+            
+            // Logging
             const logItem = document.createElement('li');
             logItem.className = 'log-item' + (isRight ? ' can-open' : '');
             logItem.innerHTML = `
-                <div class="log-header" onclick="${isRight ? 'toggleAnswer(this)' : ''}">
-                    <span>${card.q}</span>
-                    <span style="color:${isRight?'var(--success)':'var(--danger)'}">${isRight?'✔':'✖'}</span>
+                <div class="log-header" ${isRight ? 'onclick="toggleAnswer(this)"' : ''}>
+                    <span>${currentQ.q}</span>
+                    <span class="status-icon ${isRight?'right':'wrong'}">${isRight?'✔':'✖'}</span>
                 </div>
-                <div class="log-answer">VALID_DATA: ${card.a}</div>
-            `;
+                <div class="log-answer">Answer: ${currentQ.a}</div>`;
             document.getElementById('log-list').prepend(logItem);
 
-            if(isRight) {
+            if (isRight) {
                 playSfx('correct');
                 score++;
                 currentStreak++;
                 if(currentStreak > bestStreak) bestStreak = currentStreak;
-                triggerComboPop();
+                
+                cardEl.classList.add('pop');
                 document.getElementById('score-text').innerText = score;
-                setTimeout(() => { currentIndex++; updateUI(); }, 400);
+                
+                // Streak Chip
+                const chip = document.getElementById('streak-chip');
+                chip.innerText = `STREAK: ${currentStreak}`;
+                chip.style.display = 'block';
+
+                // Combo Overlay
+                if([3, 5, 10, 15, 20].includes(currentStreak)) {
+                    triggerComboPopup();
+                }
+
+                setTimeout(() => {
+                    currentIndex++;
+                    updateUI();
+                }, 500);
             } else {
                 playSfx('wrong');
                 currentStreak = 0;
-                missedCards.push(card);
-                document.getElementById('card').classList.add('flipped', 'shake');
-                setTimeout(() => { 
-                    document.getElementById('card').classList.remove('shake');
-                    currentIndex++; 
-                    updateUI(); 
+                document.getElementById('streak-chip').style.display = 'none';
+                missedCards.push(currentQ);
+                
+                cardEl.classList.add('flipped', 'shake');
+                
+                setTimeout(() => {
+                    currentIndex++;
+                    updateUI();
                 }, 2000);
             }
-            document.getElementById('streak-indicator').innerText = `Streak: ${currentStreak} | Best: ${bestStreak}`;
         }
 
-        function triggerComboPop() {
-            if(currentStreak < 3) return;
-            const popup = document.createElement('div');
-            popup.className = 'combo-popup';
-            popup.innerText = currentStreak >= 10 ? "GODLIKE!!" : currentStreak >= 5 ? "MEGA COMBO!" : "COMBO!";
-            document.getElementById('game-container').appendChild(popup);
-            setTimeout(() => popup.remove(), 800);
+        function triggerComboPopup() {
+            const popup = document.getElementById('combo-popup');
+            popup.innerText = currentStreak >= 10 ? "ON FIRE! 🔥" : "COMBO! ⚡";
+            popup.style.display = "block";
+            popup.style.animation = "slideUp 0.5s ease-out forwards";
+            setTimeout(() => { popup.style.display = "none"; }, 800);
         }
 
         function showGameOver() {
-            showScreen('screen-over');
+            clearInterval(timerInterval);
             document.getElementById('progress-bar-fill').style.width = "100%";
-            document.getElementById('final-stats').innerText = `${score} / ${currentDeck.length}`;
+            showScreen('screen-over');
             
-            const breakdown = document.getElementById('stats-breakdown');
-            const accuracy = Math.round((score/currentDeck.length)*100);
-            breakdown.innerHTML = `
-                <div style="display:flex; justify-content:space-between"><span>Accuracy Rating:</span> <b>${accuracy}%</b></div>
-                <div style="display:flex; justify-content:space-between"><span>Longest Streak:</span> <b>${bestStreak}</b></div>
-                <div style="display:flex; justify-content:space-between"><span>Missed Nodes:</span> <b>${missedCards.length}</b></div>
-                <div style="display:flex; justify-content:space-between"><span>Session Mode:</span> <b>${gameMode}</b></div>
-            `;
+            const statsEl = document.getElementById('extra-stats');
+            const accuracy = Math.round((score / currentDeck.length) * 100);
 
-            if(!isReviewMode) saveScore(score, currentDeck.length, gameMode);
-            document.getElementById('retry-missed-btn').style.display = missedCards.length > 0 ? 'block' : 'none';
+            if (isReviewMode) {
+                document.getElementById('over-title').innerText = "Practice Done!";
+                document.getElementById('final-stats').innerText = "You reviewed your mistakes.";
+                document.getElementById('retry-missed-btn').style.display = 'none';
+                statsEl.innerHTML = `• Session focused on growth and learning.`;
+            } else {
+                saveScore(score, currentDeck.length, gameMode);
+                document.getElementById('over-title').innerText = "Session Ended";
+                document.getElementById('final-stats').innerText = `Result: ${score} / ${currentDeck.length}`;
+                document.getElementById('retry-missed-btn').style.display = missedCards.length > 0 ? 'block' : 'none';
+                
+                statsEl.innerHTML = `
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div><b>Accuracy:</b> ${accuracy}%</div>
+                        <div><b>Missed:</b> ${missedCards.length}</div>
+                        <div><b>Best Streak:</b> ${bestStreak}</div>
+                        <div><b>Mode:</b> ${gameMode}</div>
+                    </div>
+                `;
+            }
         }
 
         function replayMissed() {
             isReviewMode = true;
             currentDeck = [...missedCards];
             missedCards = [];
-            score = 0; currentIndex = 0; currentStreak = 0;
-            document.getElementById('score-text').innerText = "0";
+            currentIndex = 0;
+            score = 0;
+            currentStreak = 0;
+            document.getElementById('score-label').innerText = "Practice Mode";
             document.getElementById('log-list').innerHTML = "";
+            document.getElementById('score-text').innerText = "0";
+            document.getElementById('streak-chip').style.display = 'none';
             showScreen('game-ui');
             updateUI();
         }
 
-        function toggleAnswer(el) { el.parentElement.classList.toggle('open'); }
+        /**
+         * LEADERBOARD & PERSISTENCE
+         */
+        function toggleAnswer(el) {
+            const p = el.parentElement;
+            const isOpen = p.classList.contains('open');
+            document.querySelectorAll('.log-item').forEach(i => i.classList.remove('open'));
+            if (!isOpen) p.classList.add('open');
+        }
+
+        function resetLeaderboard() {
+            if(confirm("Delete all high scores permanently?")) {
+                localStorage.removeItem('flashScores');
+                updateLeaderboard();
+            }
+        }
+
+        function updateLeaderboard() {
+            const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
+            const content = document.getElementById('lb-content');
+            content.innerHTML = scores.length ? '' : '<div style="font-size:0.7rem; opacity:0.4;">No records yet.</div>';
+            
+            scores.sort((a,b) => (b.score/b.total) - (a.score/a.total)).slice(0, 5).forEach((s, i) => {
+                const perc = (s.score/s.total)*100;
+                content.innerHTML += `
+                    <div class="lb-entry">
+                        <div class="lb-bar" style="width: ${perc}%"></div>
+                        <div style="z-index:1; font-weight:bold;">${s.name}</div>
+                        <div style="z-index:1; opacity:0.7; font-size:0.6rem;">${s.mode}</div>
+                        <div style="z-index:1; color:var(--warning); font-weight:900;">${s.score}/${s.total}</div>
+                    </div>`;
+            });
+        }
 
         function saveScore(s, t, m) {
             const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
             scores.push({name: userName, score: s, total: t, mode: m});
             localStorage.setItem('flashScores', JSON.stringify(scores));
             updateLeaderboard();
-        }
-
-        function updateLeaderboard() {
-            const scores = JSON.parse(localStorage.getItem('flashScores') || '[]');
-            const content = document.getElementById('lb-content');
-            content.innerHTML = scores.sort((a,b) => (b.score/b.total) - (a.score/a.total)).slice(0, 5).map(s => `
-                <div class="lb-entry">
-                    <div class="lb-bar" style="width:${(s.score/s.total)*100}%"></div>
-                    <span style="z-index:1; font-weight:800;">${s.name.substring(0,8)}</span>
-                    <span style="z-index:1; opacity:0.5; font-size:0.6rem;">${s.mode}</span>
-                    <span style="z-index:1; font-weight:900; color:var(--warning)">${s.score}/${s.total}</span>
-                </div>
-            `).join('');
-        }
-
-        function resetLeaderboard() {
-            if(confirm("Purge all neural records?")) {
-                localStorage.removeItem('flashScores');
-                updateLeaderboard();
-            }
-        }
-
-        /**
-         * AMBIENT PARTICLES
-         */
-        function initParticles() {
-            const canvas = document.getElementById('particle-canvas');
-            const ctx = canvas.getContext('2d');
-            let particles = [];
-            
-            function resize() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            }
-            window.onresize = resize;
-            resize();
-
-            class Particle {
-                constructor() {
-                    this.x = Math.random() * canvas.width;
-                    this.y = Math.random() * canvas.height;
-                    this.size = Math.random() * 2;
-                    this.speedX = Math.random() * 0.5 - 0.25;
-                    this.speedY = Math.random() * 0.5 - 0.25;
-                }
-                update() {
-                    this.x += this.speedX;
-                    this.y += this.speedY;
-                    if(this.x > canvas.width) this.x = 0;
-                    if(this.x < 0) this.x = canvas.width;
-                    if(this.y > canvas.height) this.y = 0;
-                    if(this.y < 0) this.y = canvas.height;
-                }
-                draw() {
-                    ctx.fillStyle = 'rgba(99, 102, 241, 0.5)';
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-
-            for(let i=0; i<60; i++) particles.push(new Particle());
-
-            function animate() {
-                ctx.clearRect(0,0,canvas.width, canvas.height);
-                particles.forEach(p => { p.update(); p.draw(); });
-                requestAnimationFrame(animate);
-            }
-            animate();
         }
     </script>
 </body>
